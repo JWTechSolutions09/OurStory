@@ -1,0 +1,12 @@
+{
+  "name": "ourbook",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "preview": "npx --yes serve dist -p 8788"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
