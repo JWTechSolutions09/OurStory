@@ -208,6 +208,26 @@
             72% { transform: translateX(8px); }
         }
         .admin-gate--shake { animation: adminGateShake 0.5s ease; }
+        .gallery-auto-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+            gap: 1.5rem;
+            align-items: start;
+        }
+        .gallery-auto-grid > .gallery-grid-empty {
+            grid-column: 1 / -1;
+        }
+        .admin-modal-shell {
+            box-shadow: 0 25px 50px -12px rgba(57, 56, 53, 0.12);
+        }
+        .admin-tab-pill {
+            border-radius: 9999px;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .admin-tab-pill--active {
+            background: rgba(152, 78, 86, 0.12);
+            color: #984e56;
+        }
         /* Imágenes de historia / galería: mostrar completa sin recorte */
         .ourbook-photo-frame {
             background: linear-gradient(180deg, #f7f3ed 0%, #ebe8e1 100%);
@@ -423,22 +443,22 @@
 </div>
 </section>
 
-<section id="view-gallery" class="hidden max-w-5xl mx-auto w-full">
+<section id="view-gallery" class="hidden max-w-6xl mx-auto w-full">
 <div class="text-center mb-12 relative">
 <div class="absolute -top-6 left-1/2 -translate-x-1/2 washi-tape w-28 h-7 -rotate-2 z-10"></div>
 <h2 class="font-headline text-4xl md:text-5xl text-primary italic mb-3">Galería</h2>
 <p class="font-body text-on-surface-variant">Cada foto se muestra completa. Toca el corazón para marcar favoritos.</p>
 </div>
-<div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-start"></div>
+<div id="gallery-grid" class="gallery-auto-grid w-full"></div>
 </section>
 
-<section id="view-favorites" class="hidden max-w-5xl mx-auto w-full">
+<section id="view-favorites" class="hidden max-w-6xl mx-auto w-full">
 <div class="text-center mb-12 relative">
 <div class="absolute -top-6 left-1/2 -translate-x-1/2 washi-tape w-28 h-7 rotate-3 z-10"></div>
 <h2 class="font-headline text-4xl md:text-5xl text-primary italic mb-3">Favoritos</h2>
 <p class="font-body text-on-surface-variant">Las fotos que marcaste en la galería.</p>
 </div>
-<div id="favorites-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-start"></div>
+<div id="favorites-grid" class="gallery-auto-grid w-full"></div>
 </section>
 </main>
 
@@ -457,72 +477,81 @@
 </div>
 </div>
 </div>
-<div id="admin-modal" class="hidden fixed inset-0 z-[101] flex items-center justify-center p-3 sm:p-4 bg-inverse-surface/45 backdrop-blur-sm" aria-hidden="true" role="dialog" aria-labelledby="admin-title" aria-modal="true">
-<div class="bg-surface-container-low w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-2xl sticker-shadow border border-outline-variant/25 flex flex-col shadow-2xl shadow-primary/5">
-<div class="flex items-start justify-between gap-3 px-5 py-4 border-b border-outline-variant/15 bg-gradient-to-br from-surface-bright to-surface-container-low">
-<div>
-<h2 id="admin-title" class="font-headline italic text-xl text-primary">Panel de administración</h2>
-<p class="text-xs text-on-surface-variant mt-1.5 font-body max-w-lg leading-relaxed">Aquí editas la historia, la galería y los favoritos. Los cambios se guardan en tu base de datos (Supabase); no se usan datos del navegador para el contenido.</p>
+<div id="admin-modal" class="hidden fixed inset-0 z-[101] flex items-center justify-center p-3 sm:p-5 bg-inverse-surface/50 backdrop-blur-md" aria-hidden="true" role="dialog" aria-labelledby="admin-title" aria-modal="true">
+<div class="admin-modal-shell bg-surface-container-low w-full max-w-4xl xl:max-w-5xl max-h-[94vh] overflow-hidden rounded-3xl border border-outline-variant/20 flex flex-col">
+<div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-outline-variant/10 bg-gradient-to-br from-surface-bright via-surface-container-low to-surface-bright">
+<div class="min-w-0 pr-2">
+<h2 id="admin-title" class="font-headline italic text-2xl text-primary tracking-tight">Panel de administración</h2>
+<p class="text-sm text-on-surface-variant mt-2 font-body max-w-2xl leading-relaxed">Edita la historia y la galería. Todo se guarda en <strong class="text-on-surface font-medium">Supabase</strong> (textos e imágenes en la tabla de estado). Los cambios importantes se envían en segundos; los favoritos pueden agruparse antes de subir.</p>
 </div>
-<button type="button" id="admin-close" class="p-2 rounded-xl hover:bg-surface-container text-on-surface shrink-0" aria-label="Cerrar">
-<span class="material-symbols-outlined">close</span>
+<button type="button" id="admin-close" class="p-2.5 rounded-xl hover:bg-surface-container text-on-surface shrink-0 border border-transparent hover:border-outline-variant/30 transition-colors" aria-label="Cerrar">
+<span class="material-symbols-outlined text-2xl">close</span>
 </button>
 </div>
-<div class="flex px-4 border-b border-outline-variant/15 bg-surface-bright/50 gap-0.5">
-<button type="button" id="tab-story" data-admin-tab="story" class="admin-tab px-4 py-3 text-sm font-label border-b-2 border-primary text-primary transition-colors">Página principal</button>
-<button type="button" id="tab-gallery-admin" data-admin-tab="gallery" class="admin-tab px-4 py-3 text-sm font-label border-b-2 border-transparent text-on-surface-variant hover:text-primary transition-colors">Galería <span id="admin-gallery-count" class="ml-1 text-xs opacity-70 tabular-nums">(0)</span></button>
+<div class="flex flex-wrap gap-2 px-6 py-3 border-b border-outline-variant/10 bg-surface-bright/80">
+<button type="button" id="tab-story" data-admin-tab="story" class="admin-tab admin-tab-pill admin-tab-pill--active px-5 py-2.5 text-sm font-label text-primary">Página principal</button>
+<button type="button" id="tab-gallery-admin" data-admin-tab="gallery" class="admin-tab admin-tab-pill px-5 py-2.5 text-sm font-label text-on-surface-variant">Galería <span id="admin-gallery-count" class="ml-1 text-xs opacity-70 tabular-nums">(0)</span></button>
 </div>
-<div class="overflow-y-auto flex-1 min-h-0 p-5 space-y-4">
-<div id="admin-remote-wrap" class="hidden rounded-xl border border-outline-variant/30 bg-surface-bright/90 p-4 space-y-3">
-<div class="flex items-start gap-2">
-<span class="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5" aria-hidden="true">cloud_sync</span>
+<div class="overflow-y-auto flex-1 min-h-0 px-6 py-5 space-y-5">
+<div id="admin-remote-wrap" class="hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-surface-bright p-5 space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-start gap-4">
+<div class="flex items-start gap-3 min-w-0 flex-1">
+<span class="material-symbols-outlined text-primary text-2xl shrink-0" aria-hidden="true">database</span>
 <div class="min-w-0">
-<p class="text-sm font-label text-on-surface">Respaldo en línea</p>
-<p id="admin-remote-status" class="text-xs text-on-surface-variant mt-1 leading-relaxed">—</p>
+<p class="text-base font-label text-on-surface">Base de datos</p>
+<p id="admin-remote-status" class="text-sm text-on-surface-variant mt-1.5 leading-relaxed">—</p>
 </div>
 </div>
-<div class="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/15">
-<button type="button" id="admin-pull-remote" class="px-4 py-2.5 rounded-xl border border-outline-variant/50 text-on-surface text-xs font-label hover:bg-surface-container transition-colors">Traer última copia</button>
-<button type="button" id="admin-push-remote" class="px-4 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-label hover:opacity-95">Enviar copia ahora</button>
+<div class="flex flex-col gap-2 sm:w-56 shrink-0">
+<button type="button" id="admin-pull-remote" class="w-full px-4 py-3 rounded-xl border-2 border-outline-variant/40 text-on-surface text-sm font-label hover:bg-surface-container transition-colors disabled:opacity-45 disabled:cursor-not-allowed text-left">
+<span class="block font-medium">Bajar desde la nube</span>
+<span class="block text-xs text-on-surface-variant font-normal mt-0.5">Sustituye lo que ves por lo guardado en Supabase</span>
+</button>
+<button type="button" id="admin-push-remote" class="w-full px-4 py-3 rounded-xl bg-primary text-on-primary text-sm font-label hover:opacity-95 disabled:opacity-45 disabled:cursor-not-allowed text-left shadow-sm">
+<span class="block font-medium">Subir todo ahora</span>
+<span class="block text-xs text-on-primary/90 font-normal mt-0.5">Envía historia + galería tal como están ahora</span>
+</button>
 </div>
+</div>
+<p class="text-[11px] text-on-surface-variant/85 leading-snug border-t border-outline-variant/15 pt-3">Las fotos se guardan dentro del JSON (base64). Si falla el envío por tamaño, reduce fotos o calidad. Usa <strong class="text-on-surface">Subir todo ahora</strong> tras muchos cambios.</p>
 </div>
 <div id="panel-story-admin">
-<p class="text-sm text-on-surface-variant mb-4 flex items-start gap-2">
-<span class="material-symbols-outlined text-primary text-lg shrink-0">edit_note</span>
-<span>Cada bloque es plegable. Al elegir una imagen verás una vista previa: confirma con <strong class="text-on-surface">Usar esta imagen</strong>. Los textos se guardan con <strong class="text-on-surface">Guardar cambios</strong>.</span>
-</p>
-<div id="admin-story-slots" class="space-y-2"></div>
+<div class="rounded-2xl border border-outline-variant/20 bg-surface-bright/60 p-4 mb-4 flex gap-3">
+<span class="material-symbols-outlined text-primary text-xl shrink-0">edit_note</span>
+<p class="text-sm text-on-surface-variant leading-relaxed">Bloques plegables. Nueva imagen: vista previa → <strong class="text-on-surface">Usar esta imagen</strong>. Textos: <strong class="text-on-surface">Guardar cambios</strong> (se sube a la base de datos).</p>
 </div>
-<div id="panel-gallery-admin" class="hidden space-y-4">
-<p class="text-sm text-on-surface-variant flex items-start gap-2">
-<span class="material-symbols-outlined text-primary text-lg shrink-0">photo_library</span>
-<span>Las fotos aparecen en <strong class="text-on-surface">Galería</strong>. Marca el corazón en la galería o aquí para añadirlas a <strong class="text-on-surface">Favoritos</strong>.</span>
-</p>
-<div class="rounded-xl border border-outline-variant/25 p-4 space-y-3 bg-surface-bright/70">
+<div id="admin-story-slots" class="space-y-3"></div>
+</div>
+<div id="panel-gallery-admin" class="hidden space-y-5">
+<div class="rounded-2xl border border-outline-variant/20 bg-surface-bright/60 p-4 flex gap-3">
+<span class="material-symbols-outlined text-primary text-xl shrink-0">photo_library</span>
+<p class="text-sm text-on-surface-variant leading-relaxed">Las fotos verticales se ven mejor: columnas anchas mín. ~272px. Corazón en galería o aquí para <strong class="text-on-surface">Favoritos</strong>.</p>
+</div>
+<div class="rounded-2xl border border-outline-variant/25 p-5 space-y-4 bg-surface-bright/80 shadow-sm">
 <label class="block text-sm font-medium text-on-surface">Título <span class="font-normal text-on-surface-variant">(opcional)</span><input type="text" id="gallery-new-title" class="admin-input" placeholder="Ej. Verano 2024" autocomplete="off"/></label>
 <label class="block text-sm font-medium text-on-surface">Descripción <span class="font-normal text-on-surface-variant">(accesibilidad)</span><input type="text" id="gallery-new-alt" class="admin-input" placeholder="Qué se ve en la foto" autocomplete="off"/></label>
 <label class="block text-sm font-medium text-on-surface">Archivo de imagen<input type="file" id="gallery-new-file" accept="image/*" class="mt-1 w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-on-primary file:cursor-pointer"/></label>
 <div id="gallery-pending-wrap" class="hidden rounded-xl border border-outline-variant/25 bg-surface-container/60 p-3 space-y-2">
 <p class="text-xs font-label text-primary flex items-center gap-1"><span class="material-symbols-outlined text-base">visibility</span> Vista previa · revisa y confirma</p>
-<img id="gallery-pending-img" class="w-full max-h-72 object-contain rounded-lg bg-surface-bright border border-outline-variant/20 mx-auto" alt=""/>
+<img id="gallery-pending-img" class="w-full max-h-80 sm:max-h-96 object-contain rounded-xl bg-surface-bright border border-outline-variant/20 mx-auto" alt=""/>
 <p id="gallery-pending-meta" class="text-[11px] text-on-surface-variant text-center"></p>
 </div>
 <button type="button" id="gallery-upload-btn" class="w-full py-3 rounded-xl bg-primary text-on-primary font-label text-sm hover:opacity-95 transition-opacity disabled:opacity-45 disabled:cursor-not-allowed" disabled>Añadir a la galería</button>
 <p class="text-[11px] text-on-surface-variant/80 text-center">La foto se muestra entera en la galería (sin recortes).</p>
 </div>
 <div>
-<p class="text-xs font-label uppercase tracking-widest text-on-surface-variant mb-2">Fotos en galería</p>
-<div id="admin-gallery-list" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+<p class="text-xs font-label uppercase tracking-widest text-on-surface-variant mb-3">Fotos en galería</p>
+<div id="admin-gallery-list" class="space-y-3 max-h-[min(50vh,22rem)] overflow-y-auto pr-1"></div>
 </div>
 </div>
 </div>
-<div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-t border-outline-variant/15 bg-surface-container-high/80">
+<div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 px-6 py-4 border-t border-outline-variant/15 bg-surface-container-high/90">
 <div class="flex flex-wrap gap-2 items-center">
-<button type="button" id="admin-save-story" class="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label text-sm hover:opacity-90 transition-opacity">Guardar cambios</button>
-<button type="button" id="admin-reset-all" class="px-4 py-2.5 rounded-xl border border-outline-variant/60 text-on-surface-variant text-sm hover:bg-surface-container transition-colors">Restaurar valores por defecto</button>
-<button type="button" id="admin-logout-session" class="px-4 py-2.5 rounded-xl text-sm text-primary-dim hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-colors font-label">Cerrar sesión admin</button>
+<button type="button" id="admin-save-story" class="px-6 py-3 rounded-xl bg-primary text-on-primary font-label text-sm hover:opacity-90 transition-opacity shadow-sm">Guardar cambios</button>
+<button type="button" id="admin-reset-all" class="px-4 py-3 rounded-xl border border-outline-variant/50 text-on-surface-variant text-sm font-label hover:bg-surface-container transition-colors">Valores por defecto</button>
+<button type="button" id="admin-logout-session" class="px-4 py-3 rounded-xl text-sm text-primary-dim hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-colors font-label">Salir del panel</button>
 </div>
-<p class="text-[11px] text-on-surface-variant/80 font-body">Escape cierra · Volverás a pedir contraseña al cerrar sesión</p>
+<p class="text-[11px] text-on-surface-variant/75 font-body sm:text-right">Escape cierra · La contraseña se vuelve a pedir al salir</p>
 </div>
 </div>
 </div>

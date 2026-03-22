@@ -180,6 +180,58 @@
     if (el && text != null) el.textContent = text;
   }
 
+  function setRemoteButtonsBusy(busy) {
+    ["admin-pull-remote", "admin-push-remote"].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.disabled = !!busy;
+      el.setAttribute("aria-busy", busy ? "true" : "false");
+    });
+  }
+
+  /** Tamaño aproximado del JSON que enviamos (límite práctico ~5 MB en muchos hosts). */
+  function estimateOurbookPayloadBytes() {
+    try {
+      return new TextEncoder().encode(
+        JSON.stringify({
+          id: "default",
+          story: state.story,
+          gallery: state.gallery,
+          updated_at: new Date().toISOString(),
+        })
+      ).length;
+    } catch (e) {
+      console.warn("OurBook: no se pudo medir el payload", e);
+      return 0;
+    }
+  }
+
+  const MAX_PAYLOAD_BYTES = 4.5 * 1024 * 1024;
+
+  function formatSupabaseError(e) {
+    const msg = (e && e.message) || String(e || "");
+    if (/payload too large|413|entity too large|body exceeded/i.test(msg)) {
+      return "El envío es demasiado grande (muchas fotos o imágenes muy pesadas). Borra algunas de la galería o usa fotos más pequeñas, luego pulsa «Subir todo ahora».";
+    }
+    if (/JWT|Invalid API key|invalid.*key/i.test(msg)) {
+      return "La clave o la URL de Supabase no son válidas. Revisa env.js o las variables del build.";
+    }
+    if (/RLS|permission denied|policy|42501/i.test(msg)) {
+      return "Sin permiso en la base de datos. Ejecuta de nuevo supabase/ourbook.sql (políticas para anon).";
+    }
+    if (/Failed to fetch|NetworkError|network/i.test(msg)) {
+      return "No hay conexión o el servidor no respondió. Comprueba la red e inténtalo otra vez.";
+    }
+    return msg || "Error al hablar con la base de datos.";
+  }
+
+  function flushRemotePush() {
+    if (!window.sb) return Promise.resolve();
+    clearTimeout(remotePushTimer);
+    remotePushTimer = null;
+    return pushStateToSupabase();
+  }
+
   function scheduleRemotePush() {
     if (!window.sb) return;
     clearTimeout(remotePushTimer);
@@ -187,13 +239,20 @@
       remotePushTimer = null;
       pushStateToSupabase().catch(function (e) {
         console.warn("OurBook: no se pudo subir a Supabase", e);
-        setAdminRemoteStatus("Error al subir (revisa consola / RLS)");
+        setAdminRemoteStatus(formatSupabaseError(e));
       });
-    }, 850);
+    }, 700);
   }
 
   function pushStateToSupabase() {
     if (!window.sb) return Promise.resolve();
+    const bytes = estimateOurbookPayloadBytes();
+    if (bytes > MAX_PAYLOAD_BYTES) {
+      const err = new Error(
+        "Los datos superan ~4,5 MB. Reduce imágenes en la galería o en los bloques de la historia."
+      );
+      return Promise.reject(err);
+    }
     return window.sb
       .from("ourbook_state")
       .upsert(
@@ -207,7 +266,7 @@
       )
       .then(function (r) {
         if (r.error) return Promise.reject(r.error);
-        setAdminRemoteStatus("Copia en línea actualizada.");
+        setAdminRemoteStatus("Guardado en la base de datos correctamente.");
       });
   }
 
@@ -222,13 +281,14 @@
         if (res.error) return Promise.reject(res.error);
         if (!res.data) return false;
         const row = res.data;
-        if (row.story && typeof row.story === "object") {
+        if (row.story && typeof row.story === "object" && !Array.isArray(row.story)) {
           state.story = deepMerge(cloneDefaults(), row.story);
         }
         if (Array.isArray(row.gallery)) {
-          state.gallery = row.gallery;
+          state.gallery = row.gallery.filter(function (item) {
+            return item && typeof item.src === "string" && item.src.length > 0;
+          });
         }
-        saveState(state, { skipRemote: true });
         return true;
       });
   }
@@ -361,6 +421,12 @@
     item.favorite = !item.favorite;
     saveState(state);
     refreshGalleryViews();
+    if (window.sb) {
+      flushRemotePush().catch(function (e) {
+        console.warn(e);
+        if (isAdminOpen()) setAdminRemoteStatus(formatSupabaseError(e));
+      });
+    }
   }
 
   function deleteGalleryItem(id) {
@@ -370,6 +436,12 @@
     });
     saveState(state);
     refreshGalleryViews();
+    if (window.sb) {
+      flushRemotePush().catch(function (e) {
+        console.warn(e);
+        if (isAdminOpen()) setAdminRemoteStatus(formatSupabaseError(e));
+      });
+    }
   }
 
   function renderGalleryGrid() {
@@ -377,20 +449,20 @@
     if (!host) return;
     if (!state.gallery.length) {
       host.innerHTML =
-        '<p class="col-span-full text-center font-body text-on-surface-variant py-16">Aún no hay fotos. Usa el botón + o el panel de administración.</p>';
+        '<p class="gallery-grid-empty text-center font-body text-on-surface-variant py-16 px-4">Aún no hay fotos. Usa el botón + o el panel de administración.</p>';
       return;
     }
     host.innerHTML = state.gallery
       .map(function (item) {
         const fill = item.favorite ? "1" : "0";
         return (
-          '<div class="relative bg-surface-container-lowest p-3 sticker-shadow rounded-lg group">' +
-          '<div class="aspect-square overflow-hidden bg-surface-container rounded">' +
+          '<div class="relative bg-surface-container-lowest p-3 sm:p-4 sticker-shadow rounded-xl group w-full max-w-md mx-auto">' +
+          '<div class="ourbook-photo-frame rounded-xl overflow-hidden flex items-center justify-center min-h-[10rem] max-h-[min(85vh,720px)]">' +
           '<img src="' +
           escapeAttr(item.src) +
           '" alt="' +
           escapeAttr(item.alt || "") +
-          '" class="w-full h-full object-cover" loading="lazy"/>' +
+          '" class="w-full h-auto max-h-[min(85vh,720px)] object-contain" loading="lazy"/>' +
           "</div>" +
           (item.title
             ? '<p class="mt-2 font-headline italic text-sm text-on-surface text-center truncate">' +
@@ -422,19 +494,19 @@
     });
     if (!list.length) {
       host.innerHTML =
-        '<p class="col-span-full text-center font-body text-on-surface-variant py-16">Marca corazones en la galería para verlos aquí.</p>';
+        '<p class="gallery-grid-empty text-center font-body text-on-surface-variant py-16 px-4">Marca corazones en la galería para verlos aquí.</p>';
       return;
     }
     host.innerHTML = list
       .map(function (item) {
         return (
-          '<div class="relative bg-surface-container-lowest p-3 sticker-shadow rounded-lg">' +
-          '<div class="ourbook-photo-frame rounded-lg overflow-hidden flex items-center justify-center min-h-[8rem]">' +
+          '<div class="relative bg-surface-container-lowest p-3 sm:p-4 sticker-shadow rounded-xl w-full max-w-md mx-auto">' +
+          '<div class="ourbook-photo-frame rounded-xl overflow-hidden flex items-center justify-center min-h-[10rem] max-h-[min(85vh,720px)]">' +
           '<img src="' +
           escapeAttr(item.src) +
           '" alt="' +
           escapeAttr(item.alt || "") +
-          '" class="w-full h-auto max-h-[min(70vh,560px)] object-contain" loading="lazy"/>' +
+          '" class="w-full h-auto max-h-[min(85vh,720px)] object-contain" loading="lazy"/>' +
           "</div>" +
           (item.title
             ? '<p class="mt-2 font-headline italic text-sm text-on-surface text-center truncate">' +
@@ -631,8 +703,8 @@
       .map(function (item) {
         const fill = item.favorite ? "1" : "0";
         return (
-          '<div class="flex items-center gap-3 p-3 border border-outline-variant/20 rounded-xl bg-surface-bright/90 hover:border-primary/20 transition-colors">' +
-          '<div class="w-16 h-16 shrink-0 rounded-lg overflow-hidden ourbook-photo-frame flex items-center justify-center border border-outline-variant/20">' +
+          '<div class="flex items-stretch gap-4 p-4 border border-outline-variant/20 rounded-2xl bg-surface-bright/95 hover:border-primary/25 transition-colors">' +
+          '<div class="w-[6.5rem] sm:w-28 shrink-0 min-h-[6.5rem] max-h-36 rounded-xl overflow-hidden ourbook-photo-frame flex items-center justify-center border border-outline-variant/25">' +
           '<img src="' +
           escapeAttr(item.src) +
           '" class="max-w-full max-h-full w-auto h-auto object-contain" alt="" loading="lazy"/>' +
@@ -780,9 +852,8 @@
     document.querySelectorAll(".admin-tab").forEach(function (btn) {
       const t = btn.getAttribute("data-admin-tab");
       const on = (t === "story" && isStory) || (t === "gallery" && !isStory);
-      btn.classList.toggle("border-primary", on);
+      btn.classList.toggle("admin-tab-pill--active", on);
       btn.classList.toggle("text-primary", on);
-      btn.classList.toggle("border-transparent", !on);
       btn.classList.toggle("text-on-surface-variant", !on);
     });
     const pStory = document.getElementById("panel-story-admin");
@@ -839,13 +910,27 @@
     document.getElementById("admin-save-story")?.addEventListener("click", function () {
       state.story = readAdminStoryForm();
       applyStoryToPage();
-      saveState(state);
-      if (window.sb) showToast("Guardado; actualizando la base de datos…");
+      if (!window.sb) {
+        notifySupabaseRequired();
+        return;
+      }
+      showToast("Guardando en la base de datos…");
+      flushRemotePush()
+        .then(function () {
+          showToast("Textos guardados correctamente");
+        })
+        .catch(function (e) {
+          console.error(e);
+          const msg = formatSupabaseError(e);
+          setAdminRemoteStatus(msg);
+          alert(msg);
+        });
     });
 
     document.getElementById("admin-pull-remote")?.addEventListener("click", function () {
       if (!window.sb) return;
-      setAdminRemoteStatus("Descargando la última copia…");
+      setRemoteButtonsBusy(true);
+      setAdminRemoteStatus("Leyendo desde Supabase…");
       fetchRemoteIntoState()
         .then(function (hadRow) {
           applyStoryToPage();
@@ -854,30 +939,41 @@
           updateGalleryCountBadge();
           refreshGalleryViews();
           setAdminRemoteStatus(
-            hadRow ? "Listo: se aplicaron los datos del respaldo." : "No había copia en la nube; al guardar se creará."
+            hadRow
+              ? "Listo: historia y galería cargadas desde la base de datos (imágenes incluidas)."
+              : "No hay fila todavía: al guardar o subir se creará en Supabase."
           );
-          showToast(hadRow ? "Copia aplicada desde la nube" : "Sin datos remotos aún");
+          showToast(hadRow ? "Datos cargados desde la nube" : "Empieza a editar y guarda para crear la fila");
         })
         .catch(function (e) {
           console.error(e);
-          setAdminRemoteStatus("No se pudo leer el respaldo. Revisa la consola o el SQL en Supabase.");
-          alert(e.message || "No se pudo leer el respaldo");
+          const msg = formatSupabaseError(e);
+          setAdminRemoteStatus(msg);
+          alert(msg);
+        })
+        .finally(function () {
+          setRemoteButtonsBusy(false);
         });
     });
 
     document.getElementById("admin-push-remote")?.addEventListener("click", function () {
       if (!window.sb) return;
-      setAdminRemoteStatus("Enviando copia…");
+      setRemoteButtonsBusy(true);
+      setAdminRemoteStatus("Subiendo historia y galería…");
       clearTimeout(remotePushTimer);
       remotePushTimer = null;
       pushStateToSupabase()
         .then(function () {
-          showToast("Copia enviada al respaldo");
+          showToast("Todo guardado en Supabase");
         })
         .catch(function (e) {
           console.error(e);
-          setAdminRemoteStatus("Error al enviar. Revisa permisos (RLS) y la red.");
-          alert(e.message || "No se pudo enviar");
+          const msg = formatSupabaseError(e);
+          setAdminRemoteStatus(msg);
+          alert(msg);
+        })
+        .finally(function () {
+          setRemoteButtonsBusy(false);
         });
     });
 
@@ -890,7 +986,6 @@
         state.story[key] = state.story[key] || {};
         state.story[key].src = dataUrl;
         delete state.story[key].storagePath;
-        saveState(state);
         applyStoryToPage();
         const prev = document.querySelector('[data-story-preview="' + key + '"]');
         if (prev) {
@@ -902,7 +997,19 @@
         delete pendingStoryByKey[key];
         const fileIn = document.querySelector('[data-story-file="' + key + '"]');
         if (fileIn) fileIn.value = "";
-        showToast("Imagen aplicada en la página");
+        if (window.sb) {
+          showToast("Guardando imagen en la base de datos…");
+          flushRemotePush()
+            .then(function () {
+              showToast("Imagen aplicada y guardada");
+            })
+            .catch(function (e) {
+              console.error(e);
+              alert(formatSupabaseError(e));
+            });
+        } else {
+          notifySupabaseRequired();
+        }
         return;
       }
       const cancelBtn = e.target.closest("[data-admin-pending-cancel]");
@@ -984,14 +1091,25 @@
         favorite: false,
         addedAt: Date.now(),
       });
-      saveState(state);
       if (titleIn) titleIn.value = "";
       if (altIn) altIn.value = "";
       clearGalleryPending();
       renderAdminGalleryList();
       updateGalleryCountBadge();
       refreshGalleryViews();
-      showToast("Foto añadida a la galería");
+      if (!window.sb) {
+        notifySupabaseRequired();
+        return;
+      }
+      showToast("Guardando foto en la base de datos…");
+      flushRemotePush()
+        .then(function () {
+          showToast("Foto añadida y guardada");
+        })
+        .catch(function (e) {
+          console.error(e);
+          alert(formatSupabaseError(e));
+        });
     });
 
     document.getElementById("admin-reset-all")?.addEventListener("click", function () {
@@ -1019,7 +1137,7 @@
           })
           .catch(function (e) {
             console.error(e);
-            alert(e.message || "No se pudo guardar el reinicio en la base de datos");
+            alert(formatSupabaseError(e));
           });
       }
     });
@@ -1110,21 +1228,21 @@
   function startApp() {
     const boot = window._ourbookBoot;
     function afterBoot() {
-      if (window.sb) setAdminRemoteStatus("Comprobando respaldo en línea…");
+      if (window.sb) setAdminRemoteStatus("Conectando con Supabase…");
       fetchRemoteIntoState()
         .then(function (hadRow) {
           if (window.sb) {
             setAdminRemoteStatus(
               hadRow
-                ? "En línea: se cargó la última copia guardada."
-                : "En línea: aún no hay copia; se creará al guardar cambios."
+                ? "Sincronizado: últimos datos cargados desde la base (textos e imágenes)."
+                : "Sin datos previos: la primera vez que guardes se creará la fila en Supabase."
             );
           }
         })
         .catch(function (e) {
           console.warn("OurBook: no se pudo leer Supabase", e);
           if (window.sb) {
-            setAdminRemoteStatus("No se pudo conectar al respaldo (revisa SQL, red o claves).");
+            setAdminRemoteStatus(formatSupabaseError(e));
           }
         })
         .finally(finishStartApp);
