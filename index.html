@@ -284,30 +284,33 @@
 </div>
 </div>
 </div>
-<!-- Section 2: Scattered Stickers & Note -->
-<div class="relative min-h-[600px]">
+<!-- Section 2: Scattered Stickers & Note — móvil: columna; md+: collage absoluto -->
+<div class="relative isolate flex flex-col gap-8 pb-8 overflow-x-clip md:overflow-visible md:block md:min-h-[600px] md:pb-0 md:gap-0">
 <!-- A Note to Us (Left Aligned) -->
-<div class="max-w-md bg-surface-container p-8 sticker-shadow relative border-l-4 border-primary/20 rotate-[-1deg] z-10">
-<span class="material-symbols-outlined absolute -top-4 -right-4 text-primary text-4xl -rotate-12 sparkle-float">auto_awesome</span>
-<h3 class="font-headline italic text-2xl text-primary mb-4">A Note to Us</h3>
-<p class="font-body text-on-surface-variant leading-relaxed">
-                    In the quiet moments and the loud ones, through the changing seasons of our lives, these memories serve as a testament to the love we've built.
-                </p>
+<div class="max-w-md w-full mx-auto md:mx-0 bg-surface-container p-6 sm:p-8 sticker-shadow relative border-l-4 border-primary/20 rotate-[-1deg] z-20 shrink-0">
+<span class="material-symbols-outlined absolute -top-4 -right-4 text-primary text-4xl -rotate-12 sparkle-float pointer-events-none">auto_awesome</span>
+<h3 class="font-headline italic text-2xl text-primary mb-4">Una nota para nosotros</h3>
+<div class="font-body text-on-surface-variant leading-relaxed space-y-4">
+<p>El amor es paciente, es bondadoso. El amor no es envidioso ni jactancioso ni orgulloso.</p>
+<p>No se comporta con rudeza, no es egoísta, no se enoja fácilmente, no guarda rencor.</p>
+<p>El amor no se deleita en la maldad sino que se regocija con la verdad.</p>
+<p>Todo lo disculpa, todo lo cree, todo lo espera, todo lo soporta.</p>
+</div>
 <div class="mt-6 flex items-center gap-4">
 <div class="h-[1px] flex-grow bg-outline-variant/30"></div>
-<span class="font-headline italic text-primary">Always yours</span>
+<span class="font-headline italic text-primary text-sm sm:text-base whitespace-nowrap">1 Corintios 13:4-7</span>
 </div>
 </div>
 <!-- Polaroid Style Memory -->
-<div class="absolute top-20 right-0 md:right-20 w-64 group cursor-pointer" data-story-slot="polaroid">
-<div class="polaroid-white rotate-6 transform-gpu hover:rotate-0 transition-all duration-300 relative">
+<div class="relative z-10 w-full max-w-[260px] sm:max-w-64 mx-auto md:max-w-none group cursor-pointer md:absolute md:top-20 md:right-20 md:w-64 md:mx-0" data-story-slot="polaroid">
+<div class="polaroid-white rotate-3 sm:rotate-6 transform-gpu hover:rotate-0 transition-all duration-300 relative">
 <img data-slot-img class="w-full aspect-square object-cover" alt="" src=""/>
-<p data-slot-caption class="mt-4 font-headline italic text-on-surface-variant text-center"></p>
+<p data-slot-caption class="mt-4 font-headline italic text-on-surface-variant text-center text-sm sm:text-base"></p>
 <div class="absolute -top-3 left-1/2 -translate-x-1/2 washi-tape w-16 h-6 rotate-2"></div>
 </div>
 </div>
 <!-- Cut-out Photo -->
-<div class="absolute -bottom-10 left-1/2 md:left-1/3 w-48 group" data-story-slot="cutout">
+<div class="relative z-10 w-44 max-w-[90vw] mx-auto mb-6 md:mb-0 group md:absolute md:-bottom-10 md:left-1/3 md:w-48 md:max-w-none md:mx-0" data-story-slot="cutout">
 <div class="cut-out overflow-hidden sticker-shadow rotate-[-8deg] hover:scale-110 transition-transform">
 <img data-slot-img class="w-full h-full object-cover" alt="" src=""/>
 </div>
@@ -373,16 +376,16 @@
 <div class="flex flex-col md:flex-row items-start gap-12 pt-20">
 <div class="flex-grow max-w-lg bg-surface-container-low p-10 sticker-shadow relative border border-outline-variant/10">
 <div class="absolute -top-5 left-1/2 -translate-x-1/2 washi-tape w-40 h-8 opacity-30"></div>
-<h3 class="font-headline italic text-3xl text-primary mb-6">Dear Future Us,</h3>
+<h3 class="font-headline italic text-3xl text-primary mb-6">Queridos nosotros del futuro,</h3>
 <p class="font-body text-on-surface-variant leading-relaxed text-lg mb-4">
-                    Remember this feeling. Remember the way the light hit the kitchen floor on Sunday mornings, and the way we laughed until it hurt over nothing at all.
+                    Siempre recordemos este sentimiento.
+                </p>
+<p class="font-body text-on-surface-variant leading-relaxed text-lg mb-4">
+                    Las primeras risas, el primer beso, las primeras salidas. Incluso las primeras lágrimas. No todo tiene siempre que ser perfecto, pero si estamos juntos podemos hacer que nuestras imperfecciones sean las mejores para ambos.
                 </p>
 <p class="font-body text-on-surface-variant leading-relaxed text-lg">
-                    These are the days we will look back on. These are the bricks of our home. Let's never stop collecting these moments.
+                    Nunca dejemos de amarnos, escucharnos y, sobre todo, sonreír.
                 </p>
-<div class="mt-8 pt-8 border-t border-outline-variant/20 italic font-headline text-primary">
-                    With all my love, always.
-                </div>
 </div>
 <div class="relative w-full md:w-80 pt-12" data-story-slot="letterPhoto">
 <div class="bg-surface-container-lowest p-4 sticker-shadow rotate-[-4deg] group cursor-pointer hover:rotate-0 transition-all relative">
@@ -501,7 +504,7 @@
 <a class="text-[#393835]/40 hover:text-[#984e56] font-['Plus_Jakarta_Sans'] text-xs tracking-[0.2em] uppercase transition-colors" href="#">Archive</a>
 <button type="button" id="footer-add-memory" class="text-[#393835]/40 hover:text-[#984e56] font-['Plus_Jakarta_Sans'] text-xs tracking-[0.2em] uppercase transition-colors cursor-pointer bg-transparent border-0 p-0">Add Memory</button>
 </div>
-<p class="text-[#393835]/30 font-['Plus_Jakarta_Sans'] text-xs tracking-[0.1em] uppercase">Handcrafted with love for Our Digital Keepsake</p>
+<p class="text-[#393835]/30 font-['Plus_Jakarta_Sans'] text-xs tracking-wide">Hecho con amor para el amor de mi vida</p>
 <div class="mt-2 flex gap-3">
 <span class="material-symbols-outlined text-primary/20" style="font-variation-settings: 'FILL' 1;">heart_plus</span>
 <span class="material-symbols-outlined text-primary/20" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
