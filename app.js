@@ -1,10 +1,11 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "ourbook_keepsake_v1";
+  /** Antes se usaba localStorage; se elimina en carga para no dejar restos. */
+  const LEGACY_STORAGE_KEY = "ourbook_keepsake_v1";
   const ADMIN_SESSION_KEY = "ourbook_admin_unlocked";
   const ADMIN_PASSWORD = "Forever";
-  const ADMIN_FORM_VERSION = "3";
+  const ADMIN_FORM_VERSION = "4";
 
   const VIEW = { STORY: "story", GALLERY: "gallery", FAVORITES: "favorites" };
 
@@ -116,46 +117,62 @@
     return JSON.parse(JSON.stringify(DEFAULT_STORY));
   }
 
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { story: cloneDefaults(), gallery: [] };
-      const parsed = JSON.parse(raw);
-      return {
-        story: deepMerge(cloneDefaults(), parsed.story || {}),
-        gallery: Array.isArray(parsed.gallery) ? parsed.gallery : [],
-      };
-    } catch {
-      return { story: cloneDefaults(), gallery: [] };
-    }
+  try {
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch (_) {}
+
+  /** Estado inicial en memoria hasta cargar desde Supabase (nunca se persiste en localStorage). */
+  function emptyState() {
+    return { story: cloneDefaults(), gallery: [] };
+  }
+
+  let noSupabaseWarned = false;
+  function notifySupabaseRequired() {
+    if (noSupabaseWarned) return;
+    noSupabaseWarned = true;
+    alert(
+      "OurBook guarda solo en la base de datos. Configura la URL y la clave anon de Supabase en env.js o en el build (.env), y recarga la página."
+    );
   }
 
   function saveState(next, opts) {
     opts = opts || {};
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {
-      alert(
-        "No se pudo guardar (almacenamiento lleno). Usa imágenes más pequeñas o restaura valores por defecto."
-      );
-      console.error(e);
+    void next;
+    if (opts.skipRemote) return;
+    if (!window.sb) {
+      notifySupabaseRequired();
       return;
     }
-    if (!opts.skipRemote && window.sb) {
-      scheduleRemotePush();
-    }
+    scheduleRemotePush();
   }
 
-  let state = loadState();
+  let state = emptyState();
   let currentView = VIEW.STORY;
   let toastTimer = null;
   let remotePushTimer = null;
+  /** dataUrl pendiente por slot hasta confirmar */
+  const pendingStoryByKey = {};
+  let galleryPendingDataUrl = null;
 
   function refreshAdminRemoteBanner() {
     const wrap = document.getElementById("admin-remote-wrap");
     if (!wrap) return;
     if (window.sb) wrap.classList.remove("hidden");
     else wrap.classList.add("hidden");
+  }
+
+  function clearGalleryPending() {
+    galleryPendingDataUrl = null;
+    const wrap = document.getElementById("gallery-pending-wrap");
+    const img = document.getElementById("gallery-pending-img");
+    const meta = document.getElementById("gallery-pending-meta");
+    const btn = document.getElementById("gallery-upload-btn");
+    if (wrap) wrap.classList.add("hidden");
+    if (img) img.removeAttribute("src");
+    if (meta) meta.textContent = "";
+    if (btn) btn.disabled = true;
+    const fileIn = document.getElementById("gallery-new-file");
+    if (fileIn) fileIn.value = "";
   }
 
   function setAdminRemoteStatus(text) {
@@ -190,7 +207,7 @@
       )
       .then(function (r) {
         if (r.error) return Promise.reject(r.error);
-        setAdminRemoteStatus("Sincronizado con Supabase");
+        setAdminRemoteStatus("Copia en línea actualizada.");
       });
   }
 
@@ -412,12 +429,12 @@
       .map(function (item) {
         return (
           '<div class="relative bg-surface-container-lowest p-3 sticker-shadow rounded-lg">' +
-          '<div class="aspect-square overflow-hidden bg-surface-container rounded">' +
+          '<div class="ourbook-photo-frame rounded-lg overflow-hidden flex items-center justify-center min-h-[8rem]">' +
           '<img src="' +
           escapeAttr(item.src) +
           '" alt="' +
           escapeAttr(item.alt || "") +
-          '" class="w-full h-full object-cover" loading="lazy"/>' +
+          '" class="w-full h-auto max-h-[min(70vh,560px)] object-contain" loading="lazy"/>' +
           "</div>" +
           (item.title
             ? '<p class="mt-2 font-headline italic text-sm text-on-surface text-center truncate">' +
@@ -503,16 +520,28 @@
         '.alt" class="admin-input" autocomplete="off"/></label>' +
         fieldInputs +
         '<label class="mt-3 flex flex-col gap-2 text-sm text-on-surface-variant">' +
-        "<span>Reemplazar imagen</span>" +
+        "<span>Elegir nueva imagen</span>" +
         '<input type="file" accept="image/*" data-story-file="' +
         meta.key +
         '" class="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-on-primary file:cursor-pointer"/></label>' +
-        '<div class="flex items-start gap-3 mt-2">' +
+        '<p class="text-[11px] text-on-surface-variant/70 mt-2 leading-snug">Imagen actual en la página (sin recorte):</p>' +
         '<img data-story-preview="' +
         meta.key +
-        '" class="max-h-24 max-w-[40%] rounded-lg object-cover border border-outline-variant/30 hidden" alt="Vista previa"/>' +
-        '<p class="text-[11px] text-on-surface-variant/75 leading-snug pt-1">JPEG comprimido (~1400px). Se guarda al elegir el archivo.</p>' +
-        "</div>" +
+        '" class="mt-1 w-full max-h-44 object-contain rounded-xl border border-outline-variant/25 bg-surface-bright hidden" alt=""/>' +
+        '<div class="hidden mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2" data-admin-pending-for="' +
+        meta.key +
+        '">' +
+        '<p class="text-xs font-label text-primary">Nueva imagen · revisa y confirma</p>' +
+        '<img class="admin-slot-pending-img w-full max-h-56 object-contain rounded-lg bg-surface-bright border border-outline-variant/20" alt=""/>' +
+        '<div class="flex flex-wrap gap-2">' +
+        '<button type="button" data-admin-pending-apply="' +
+        meta.key +
+        '" class="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-label hover:opacity-95">Usar esta imagen</button>' +
+        '<button type="button" data-admin-pending-cancel="' +
+        meta.key +
+        '" class="px-4 py-2 rounded-xl border border-outline-variant/50 text-on-surface-variant text-xs font-label hover:bg-surface-container">Cancelar</button>' +
+        "</div></div>" +
+        '<p class="text-[11px] text-on-surface-variant/60 mt-2 leading-snug">Se comprime a JPEG (~1400px) al confirmar.</p>' +
         "</div>" +
         "</details>"
       );
@@ -557,6 +586,18 @@
         }
       }
     });
+    document.querySelectorAll("[data-admin-pending-for]").forEach(function (w) {
+      w.classList.add("hidden");
+      const pi = w.querySelector(".admin-slot-pending-img");
+      if (pi) pi.removeAttribute("src");
+    });
+    Object.keys(pendingStoryByKey).forEach(function (k) {
+      delete pendingStoryByKey[k];
+    });
+    document.querySelectorAll("[data-story-file]").forEach(function (inp) {
+      inp.value = "";
+    });
+    clearGalleryPending();
   }
 
   function readAdminStoryForm() {
@@ -591,9 +632,11 @@
         const fill = item.favorite ? "1" : "0";
         return (
           '<div class="flex items-center gap-3 p-3 border border-outline-variant/20 rounded-xl bg-surface-bright/90 hover:border-primary/20 transition-colors">' +
+          '<div class="w-16 h-16 shrink-0 rounded-lg overflow-hidden ourbook-photo-frame flex items-center justify-center border border-outline-variant/20">' +
           '<img src="' +
           escapeAttr(item.src) +
-          '" class="w-14 h-14 object-cover rounded-lg shrink-0" alt="" loading="lazy"/>' +
+          '" class="max-w-full max-h-full w-auto h-auto object-contain" alt="" loading="lazy"/>' +
+          "</div>" +
           '<div class="flex-grow min-w-0">' +
           '<p class="font-body text-sm font-medium text-on-surface truncate">' +
           escapeHtml(item.title || "Sin título") +
@@ -795,14 +838,14 @@
 
     document.getElementById("admin-save-story")?.addEventListener("click", function () {
       state.story = readAdminStoryForm();
-      saveState(state);
       applyStoryToPage();
-      showToast(window.sb ? "Guardado (local + nube en breve)" : "Cambios de la página guardados");
+      saveState(state);
+      if (window.sb) showToast("Guardado; actualizando la base de datos…");
     });
 
     document.getElementById("admin-pull-remote")?.addEventListener("click", function () {
       if (!window.sb) return;
-      setAdminRemoteStatus("Descargando…");
+      setAdminRemoteStatus("Descargando la última copia…");
       fetchRemoteIntoState()
         .then(function (hadRow) {
           applyStoryToPage();
@@ -810,30 +853,67 @@
           renderAdminGalleryList();
           updateGalleryCountBadge();
           refreshGalleryViews();
-          setAdminRemoteStatus(hadRow ? "Datos cargados desde Supabase" : "No hay datos en la nube aún");
-          showToast(hadRow ? "Sincronizado desde Supabase" : "Sin fila en la base; edita y guarda para crearla");
+          setAdminRemoteStatus(
+            hadRow ? "Listo: se aplicaron los datos del respaldo." : "No había copia en la nube; al guardar se creará."
+          );
+          showToast(hadRow ? "Copia aplicada desde la nube" : "Sin datos remotos aún");
         })
         .catch(function (e) {
           console.error(e);
-          setAdminRemoteStatus("Error al leer (¿ejecutaste supabase/ourbook.sql?)");
-          alert(e.message || "No se pudo leer Supabase");
+          setAdminRemoteStatus("No se pudo leer el respaldo. Revisa la consola o el SQL en Supabase.");
+          alert(e.message || "No se pudo leer el respaldo");
         });
     });
 
     document.getElementById("admin-push-remote")?.addEventListener("click", function () {
       if (!window.sb) return;
-      setAdminRemoteStatus("Subiendo…");
+      setAdminRemoteStatus("Enviando copia…");
       clearTimeout(remotePushTimer);
       remotePushTimer = null;
       pushStateToSupabase()
         .then(function () {
-          showToast("Subido a Supabase");
+          showToast("Copia enviada al respaldo");
         })
         .catch(function (e) {
           console.error(e);
-          setAdminRemoteStatus("Error al subir");
-          alert(e.message || "No se pudo subir");
+          setAdminRemoteStatus("Error al enviar. Revisa permisos (RLS) y la red.");
+          alert(e.message || "No se pudo enviar");
         });
+    });
+
+    document.getElementById("admin-story-slots")?.addEventListener("click", function (e) {
+      const applyBtn = e.target.closest("[data-admin-pending-apply]");
+      if (applyBtn) {
+        const key = applyBtn.getAttribute("data-admin-pending-apply");
+        const dataUrl = pendingStoryByKey[key];
+        if (!dataUrl) return;
+        state.story[key] = state.story[key] || {};
+        state.story[key].src = dataUrl;
+        delete state.story[key].storagePath;
+        saveState(state);
+        applyStoryToPage();
+        const prev = document.querySelector('[data-story-preview="' + key + '"]');
+        if (prev) {
+          prev.src = dataUrl;
+          prev.classList.remove("hidden");
+        }
+        const wrap = document.querySelector('[data-admin-pending-for="' + key + '"]');
+        if (wrap) wrap.classList.add("hidden");
+        delete pendingStoryByKey[key];
+        const fileIn = document.querySelector('[data-story-file="' + key + '"]');
+        if (fileIn) fileIn.value = "";
+        showToast("Imagen aplicada en la página");
+        return;
+      }
+      const cancelBtn = e.target.closest("[data-admin-pending-cancel]");
+      if (cancelBtn) {
+        const key = cancelBtn.getAttribute("data-admin-pending-cancel");
+        delete pendingStoryByKey[key];
+        const wrap = document.querySelector('[data-admin-pending-for="' + key + '"]');
+        if (wrap) wrap.classList.add("hidden");
+        const fileIn = document.querySelector('[data-story-file="' + key + '"]');
+        if (fileIn) fileIn.value = "";
+      }
     });
 
     document.getElementById("admin-story-slots")?.addEventListener("change", function (e) {
@@ -844,21 +924,44 @@
       if (!file) return;
       fileToDataUrl(file)
         .then(function (dataUrl) {
-          state.story[key] = state.story[key] || {};
-          state.story[key].src = dataUrl;
-          delete state.story[key].storagePath;
-          saveState(state);
-          applyStoryToPage();
-          const prev = document.querySelector('[data-story-preview="' + key + '"]');
-          if (prev) {
-            prev.src = dataUrl;
-            prev.classList.remove("hidden");
-          }
-          t.value = "";
-          showToast("Imagen actualizada");
+          pendingStoryByKey[key] = dataUrl;
+          const wrap = document.querySelector('[data-admin-pending-for="' + key + '"]');
+          const pImg = wrap && wrap.querySelector(".admin-slot-pending-img");
+          if (pImg) pImg.src = dataUrl;
+          if (wrap) wrap.classList.remove("hidden");
         })
         .catch(function (err) {
           alert(err.message || "Error al procesar la imagen");
+          t.value = "";
+        });
+    });
+
+    document.getElementById("gallery-new-file")?.addEventListener("change", function () {
+      const file = this.files && this.files[0];
+      const wrap = document.getElementById("gallery-pending-wrap");
+      const img = document.getElementById("gallery-pending-img");
+      const meta = document.getElementById("gallery-pending-meta");
+      const btn = document.getElementById("gallery-upload-btn");
+      galleryPendingDataUrl = null;
+      if (!file) {
+        clearGalleryPending();
+        return;
+      }
+      fileToDataUrl(file)
+        .then(function (dataUrl) {
+          galleryPendingDataUrl = dataUrl;
+          if (img) img.src = dataUrl;
+          if (wrap) wrap.classList.remove("hidden");
+          if (meta) {
+            meta.textContent =
+              file.name + " · " + Math.max(1, Math.round(file.size / 1024)) + " KB (se optimiza al añadir)";
+          }
+          if (btn) btn.disabled = false;
+        })
+        .catch(function (err) {
+          alert(err.message || "No se pudo leer la imagen");
+          this.value = "";
+          clearGalleryPending();
         });
     });
 
@@ -866,54 +969,58 @@
       const titleIn = document.getElementById("gallery-new-title");
       const altIn = document.getElementById("gallery-new-alt");
       const fileIn = document.getElementById("gallery-new-file");
-      const file = fileIn && fileIn.files && fileIn.files[0];
-      if (!file) {
-        alert("Elige una imagen.");
+      if (!galleryPendingDataUrl) {
+        alert("Elige una imagen y espera a que aparezca la vista previa.");
         return;
       }
-      fileToDataUrl(file)
-        .then(function (dataUrl) {
-          const title = (titleIn && titleIn.value.trim()) || "";
-          const alt = (altIn && altIn.value.trim()) || "";
-          state.gallery.push({
-            id: uid(),
-            src: dataUrl,
-            title: title,
-            alt: alt,
-            favorite: false,
-            addedAt: Date.now(),
-          });
-          saveState(state);
-          if (titleIn) titleIn.value = "";
-          if (altIn) altIn.value = "";
-          if (fileIn) fileIn.value = "";
-          renderAdminGalleryList();
-          updateGalleryCountBadge();
-          refreshGalleryViews();
-          showToast("Foto añadida a la galería");
-        })
-        .catch(function (err) {
-          alert(err.message || "Error");
-        });
+      const title = (titleIn && titleIn.value.trim()) || "";
+      const alt = (altIn && altIn.value.trim()) || "";
+      const dataUrl = galleryPendingDataUrl;
+      state.gallery.push({
+        id: uid(),
+        src: dataUrl,
+        title: title,
+        alt: alt,
+        favorite: false,
+        addedAt: Date.now(),
+      });
+      saveState(state);
+      if (titleIn) titleIn.value = "";
+      if (altIn) altIn.value = "";
+      clearGalleryPending();
+      renderAdminGalleryList();
+      updateGalleryCountBadge();
+      refreshGalleryViews();
+      showToast("Foto añadida a la galería");
     });
 
     document.getElementById("admin-reset-all")?.addEventListener("click", function () {
       if (
         confirm(
-          "¿Restaurar todo al diseño original? Se borran datos locales" +
-            (window.sb ? " y se actualiza la copia en Supabase." : ".")
+          "¿Restaurar todo al diseño original? Se sobrescribe el contenido en la base de datos con los valores por defecto."
         )
       ) {
-        localStorage.removeItem(STORAGE_KEY);
-        state = loadState();
-        saveState(state);
+        if (!window.sb) {
+          notifySupabaseRequired();
+          return;
+        }
+        state = emptyState();
         applyStoryToPage();
         fillAdminStoryForm();
         renderAdminGalleryList();
         updateGalleryCountBadge();
         refreshGalleryViews();
-        closeAdmin();
-        showToast("Valores por defecto restaurados");
+        clearTimeout(remotePushTimer);
+        remotePushTimer = null;
+        pushStateToSupabase()
+          .then(function () {
+            closeAdmin();
+            showToast("Valores por defecto guardados en la base de datos");
+          })
+          .catch(function (e) {
+            console.error(e);
+            alert(e.message || "No se pudo guardar el reinicio en la base de datos");
+          });
       }
     });
 
@@ -1003,19 +1110,21 @@
   function startApp() {
     const boot = window._ourbookBoot;
     function afterBoot() {
-      if (window.sb) setAdminRemoteStatus("Cargando desde Supabase…");
+      if (window.sb) setAdminRemoteStatus("Comprobando respaldo en línea…");
       fetchRemoteIntoState()
         .then(function (hadRow) {
           if (window.sb) {
             setAdminRemoteStatus(
-              hadRow ? "Listo · datos desde Supabase" : "Listo · la nube se creará al guardar"
+              hadRow
+                ? "En línea: se cargó la última copia guardada."
+                : "En línea: aún no hay copia; se creará al guardar cambios."
             );
           }
         })
         .catch(function (e) {
           console.warn("OurBook: no se pudo leer Supabase", e);
           if (window.sb) {
-            setAdminRemoteStatus("Sin acceso a la nube (SQL o red)");
+            setAdminRemoteStatus("No se pudo conectar al respaldo (revisa SQL, red o claves).");
           }
         })
         .finally(finishStartApp);

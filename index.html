@@ -208,6 +208,14 @@
             72% { transform: translateX(8px); }
         }
         .admin-gate--shake { animation: adminGateShake 0.5s ease; }
+        /* Imágenes de historia / galería: mostrar completa sin recorte */
+        .ourbook-photo-frame {
+            background: linear-gradient(180deg, #f7f3ed 0%, #ebe8e1 100%);
+        }
+        img[data-slot-img] {
+            object-fit: contain;
+            object-position: center;
+        }
         @keyframes shimmerHeader {
             0% { background-position: 0% 50%; }
             100% { background-position: 100% 50%; }
@@ -259,8 +267,8 @@
 <div class="md:col-span-7 relative group cursor-pointer transition-transform duration-500 hover:scale-[1.01] reveal-on-scroll hover-lift" data-story-slot="mainLarge">
 <div class="absolute -top-4 -left-4 washi-tape w-24 h-10 rotate-[-15deg] z-20"></div>
 <div class="bg-surface-container-lowest p-4 sticker-shadow rotate-1 transform-gpu">
-<div class="aspect-[4/3] overflow-hidden relative">
-<img data-slot-img class="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" alt="" src=""/>
+<div class="aspect-[4/3] overflow-hidden relative ourbook-photo-frame">
+<img data-slot-img class="w-full h-full grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" alt="" src=""/>
 <div class="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center p-8 text-center">
 <p data-slot-overlay class="font-headline italic text-on-primary text-2xl"></p>
 </div>
@@ -304,15 +312,17 @@
 <!-- Polaroid Style Memory -->
 <div class="relative z-10 w-full max-w-[260px] sm:max-w-64 mx-auto md:max-w-none group cursor-pointer md:absolute md:top-20 md:right-20 md:w-64 md:mx-0" data-story-slot="polaroid">
 <div class="polaroid-white rotate-3 sm:rotate-6 transform-gpu hover:rotate-0 transition-all duration-300 relative">
-<img data-slot-img class="w-full aspect-square object-cover" alt="" src=""/>
+<div class="ourbook-photo-frame aspect-square overflow-hidden">
+<img data-slot-img class="w-full h-full" alt="" src=""/>
+</div>
 <p data-slot-caption class="mt-4 font-headline italic text-on-surface-variant text-center text-sm sm:text-base"></p>
 <div class="absolute -top-3 left-1/2 -translate-x-1/2 washi-tape w-16 h-6 rotate-2"></div>
 </div>
 </div>
 <!-- Cut-out Photo -->
 <div class="relative z-10 w-44 max-w-[90vw] mx-auto mb-6 md:mb-0 group md:absolute md:-bottom-10 md:left-1/3 md:w-48 md:max-w-none md:mx-0" data-story-slot="cutout">
-<div class="cut-out overflow-hidden sticker-shadow rotate-[-8deg] hover:scale-110 transition-transform">
-<img data-slot-img class="w-full h-full object-cover" alt="" src=""/>
+<div class="cut-out overflow-hidden sticker-shadow rotate-[-8deg] hover:scale-110 transition-transform ourbook-photo-frame aspect-[4/5]">
+<img data-slot-img class="w-full h-full" alt="" src=""/>
 </div>
 <span class="material-symbols-outlined absolute -bottom-4 -right-2 text-primary-dim text-3xl">favorite</span>
 </div>
@@ -346,28 +356,28 @@
 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
 <!-- Mini Sticker 1 -->
 <div class="relative bg-surface-container-lowest p-2 sticker-shadow rotate-[-3deg] hover:rotate-0 transition-all cursor-pointer group" data-story-slot="mini1">
-<div class="aspect-square overflow-hidden bg-surface-container">
-<img data-slot-img class="w-full h-full object-cover opacity-90 group-hover:opacity-100" alt="" src=""/>
+<div class="aspect-square overflow-hidden bg-surface-container ourbook-photo-frame">
+<img data-slot-img class="w-full h-full opacity-90 group-hover:opacity-100" alt="" src=""/>
 </div>
 <div class="absolute top-0 right-0 washi-tape w-8 h-8 opacity-40"></div>
 </div>
 <!-- Mini Sticker 2 -->
 <div class="relative bg-surface-container-lowest p-2 sticker-shadow rotate-[5deg] hover:rotate-0 transition-all cursor-pointer group mt-8" data-story-slot="mini2">
-<div class="aspect-square overflow-hidden bg-surface-container">
-<img data-slot-img class="w-full h-full object-cover opacity-90 group-hover:opacity-100" alt="" src=""/>
+<div class="aspect-square overflow-hidden bg-surface-container ourbook-photo-frame">
+<img data-slot-img class="w-full h-full opacity-90 group-hover:opacity-100" alt="" src=""/>
 </div>
 </div>
 <!-- Mini Sticker 3 -->
 <div class="relative bg-surface-container-lowest p-2 sticker-shadow rotate-[-2deg] hover:rotate-0 transition-all cursor-pointer group" data-story-slot="mini3">
-<div class="aspect-square overflow-hidden bg-surface-container">
-<img data-slot-img class="w-full h-full object-cover opacity-90 group-hover:opacity-100" alt="" src=""/>
+<div class="aspect-square overflow-hidden bg-surface-container ourbook-photo-frame">
+<img data-slot-img class="w-full h-full opacity-90 group-hover:opacity-100" alt="" src=""/>
 </div>
 <span class="material-symbols-outlined absolute -bottom-3 -left-2 text-primary-fixed-dim rotate-[-20deg]">draw</span>
 </div>
 <!-- Mini Sticker 4 -->
 <div class="relative bg-surface-container-lowest p-2 sticker-shadow rotate-[7deg] hover:rotate-0 transition-all cursor-pointer group mt-4" data-story-slot="mini4">
-<div class="aspect-square overflow-hidden bg-surface-container">
-<img data-slot-img class="w-full h-full object-cover opacity-90 group-hover:opacity-100" alt="" src=""/>
+<div class="aspect-square overflow-hidden bg-surface-container ourbook-photo-frame">
+<img data-slot-img class="w-full h-full opacity-90 group-hover:opacity-100" alt="" src=""/>
 </div>
 </div>
 </div>
@@ -389,7 +399,9 @@
 </div>
 <div class="relative w-full md:w-80 pt-12" data-story-slot="letterPhoto">
 <div class="bg-surface-container-lowest p-4 sticker-shadow rotate-[-4deg] group cursor-pointer hover:rotate-0 transition-all relative">
-<img data-slot-img class="w-full aspect-square object-cover" alt="" src=""/>
+<div class="aspect-square overflow-hidden ourbook-photo-frame rounded-sm">
+<img data-slot-img class="w-full h-full" alt="" src=""/>
+</div>
 <div class="absolute -top-3 right-0 washi-tape w-20 h-6 rotate-12"></div>
 <p data-slot-volume class="mt-2 text-center font-label text-[10px] tracking-widest text-on-surface-variant uppercase"></p>
 </div>
@@ -415,9 +427,9 @@
 <div class="text-center mb-12 relative">
 <div class="absolute -top-6 left-1/2 -translate-x-1/2 washi-tape w-28 h-7 -rotate-2 z-10"></div>
 <h2 class="font-headline text-4xl md:text-5xl text-primary italic mb-3">Galería</h2>
-<p class="font-body text-on-surface-variant">Toca el corazón para marcar favoritos.</p>
+<p class="font-body text-on-surface-variant">Cada foto se muestra completa. Toca el corazón para marcar favoritos.</p>
 </div>
-<div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+<div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-start"></div>
 </section>
 
 <section id="view-favorites" class="hidden max-w-5xl mx-auto w-full">
@@ -426,7 +438,7 @@
 <h2 class="font-headline text-4xl md:text-5xl text-primary italic mb-3">Favoritos</h2>
 <p class="font-body text-on-surface-variant">Las fotos que marcaste en la galería.</p>
 </div>
-<div id="favorites-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+<div id="favorites-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-start"></div>
 </section>
 </main>
 
@@ -450,7 +462,7 @@
 <div class="flex items-start justify-between gap-3 px-5 py-4 border-b border-outline-variant/15 bg-gradient-to-br from-surface-bright to-surface-container-low">
 <div>
 <h2 id="admin-title" class="font-headline italic text-xl text-primary">Panel de administración</h2>
-<p class="text-xs text-on-surface-variant mt-1 font-body max-w-md">Edita la página principal, la galería y los favoritos. Si configuraste Supabase (URL + anon key), los datos también se guardan en la tabla <code class="text-[10px] bg-surface-container px-1 rounded">ourbook_state</code>; siempre hay copia en localStorage.</p>
+<p class="text-xs text-on-surface-variant mt-1.5 font-body max-w-lg leading-relaxed">Aquí editas la historia, la galería y los favoritos. Los cambios se guardan en tu base de datos (Supabase); no se usan datos del navegador para el contenido.</p>
 </div>
 <button type="button" id="admin-close" class="p-2 rounded-xl hover:bg-surface-container text-on-surface shrink-0" aria-label="Cerrar">
 <span class="material-symbols-outlined">close</span>
@@ -461,17 +473,23 @@
 <button type="button" id="tab-gallery-admin" data-admin-tab="gallery" class="admin-tab px-4 py-3 text-sm font-label border-b-2 border-transparent text-on-surface-variant hover:text-primary transition-colors">Galería <span id="admin-gallery-count" class="ml-1 text-xs opacity-70 tabular-nums">(0)</span></button>
 </div>
 <div class="overflow-y-auto flex-1 min-h-0 p-5 space-y-4">
-<div id="admin-remote-wrap" class="hidden rounded-xl border border-primary/25 bg-primary/5 p-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:justify-between">
-<p class="text-xs text-on-surface-variant leading-snug"><span class="font-label text-primary">Supabase</span> · <span id="admin-remote-status">—</span></p>
-<div class="flex flex-wrap gap-2">
-<button type="button" id="admin-pull-remote" class="px-3 py-2 rounded-xl border border-outline-variant/50 text-on-surface text-xs font-label hover:bg-surface-container">Traer de la nube</button>
-<button type="button" id="admin-push-remote" class="px-3 py-2 rounded-xl bg-primary/90 text-on-primary text-xs font-label hover:opacity-95">Subir ahora</button>
+<div id="admin-remote-wrap" class="hidden rounded-xl border border-outline-variant/30 bg-surface-bright/90 p-4 space-y-3">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5" aria-hidden="true">cloud_sync</span>
+<div class="min-w-0">
+<p class="text-sm font-label text-on-surface">Respaldo en línea</p>
+<p id="admin-remote-status" class="text-xs text-on-surface-variant mt-1 leading-relaxed">—</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/15">
+<button type="button" id="admin-pull-remote" class="px-4 py-2.5 rounded-xl border border-outline-variant/50 text-on-surface text-xs font-label hover:bg-surface-container transition-colors">Traer última copia</button>
+<button type="button" id="admin-push-remote" class="px-4 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-label hover:opacity-95">Enviar copia ahora</button>
 </div>
 </div>
 <div id="panel-story-admin">
 <p class="text-sm text-on-surface-variant mb-4 flex items-start gap-2">
 <span class="material-symbols-outlined text-primary text-lg shrink-0">edit_note</span>
-<span>Cada bloque es plegable. Las imágenes nuevas se guardan al elegir archivo; los textos al pulsar <strong class="text-on-surface">Guardar cambios</strong>.</span>
+<span>Cada bloque es plegable. Al elegir una imagen verás una vista previa: confirma con <strong class="text-on-surface">Usar esta imagen</strong>. Los textos se guardan con <strong class="text-on-surface">Guardar cambios</strong>.</span>
 </p>
 <div id="admin-story-slots" class="space-y-2"></div>
 </div>
@@ -484,7 +502,13 @@
 <label class="block text-sm font-medium text-on-surface">Título <span class="font-normal text-on-surface-variant">(opcional)</span><input type="text" id="gallery-new-title" class="admin-input" placeholder="Ej. Verano 2024" autocomplete="off"/></label>
 <label class="block text-sm font-medium text-on-surface">Descripción <span class="font-normal text-on-surface-variant">(accesibilidad)</span><input type="text" id="gallery-new-alt" class="admin-input" placeholder="Qué se ve en la foto" autocomplete="off"/></label>
 <label class="block text-sm font-medium text-on-surface">Archivo de imagen<input type="file" id="gallery-new-file" accept="image/*" class="mt-1 w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-on-primary file:cursor-pointer"/></label>
-<button type="button" id="gallery-upload-btn" class="w-full py-3 rounded-xl bg-primary text-on-primary font-label text-sm hover:opacity-95 transition-opacity">Añadir a la galería</button>
+<div id="gallery-pending-wrap" class="hidden rounded-xl border border-outline-variant/25 bg-surface-container/60 p-3 space-y-2">
+<p class="text-xs font-label text-primary flex items-center gap-1"><span class="material-symbols-outlined text-base">visibility</span> Vista previa · revisa y confirma</p>
+<img id="gallery-pending-img" class="w-full max-h-72 object-contain rounded-lg bg-surface-bright border border-outline-variant/20 mx-auto" alt=""/>
+<p id="gallery-pending-meta" class="text-[11px] text-on-surface-variant text-center"></p>
+</div>
+<button type="button" id="gallery-upload-btn" class="w-full py-3 rounded-xl bg-primary text-on-primary font-label text-sm hover:opacity-95 transition-opacity disabled:opacity-45 disabled:cursor-not-allowed" disabled>Añadir a la galería</button>
+<p class="text-[11px] text-on-surface-variant/80 text-center">La foto se muestra entera en la galería (sin recortes).</p>
 </div>
 <div>
 <p class="text-xs font-label uppercase tracking-widest text-on-surface-variant mb-2">Fotos en galería</p>
