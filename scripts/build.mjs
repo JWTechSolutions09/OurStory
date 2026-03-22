@@ -21,6 +21,21 @@ try {
 const supabaseUrl = (process.env.SUPABASE_URL || "").trim();
 const supabaseAnonKey = (process.env.SUPABASE_ANON_KEY || "").trim();
 
+const hasUrl = !!supabaseUrl;
+const hasKey = !!supabaseAnonKey;
+if (!hasUrl || !hasKey) {
+  console.log(
+    "  Variables de build (Cloudflare Pages → tu proyecto → Settings → Environment variables):"
+  );
+  console.log("    SUPABASE_URL: " + (hasUrl ? "definida" : "VACÍA — el build no puede inyectar env.js"));
+  console.log(
+    "    SUPABASE_ANON_KEY: " + (hasKey ? "definida" : "VACÍA — usa la clave anon (JWT eyJ...), no sb_secret")
+  );
+  console.log(
+    "  Actívalas para el entorno que usa tu rama (Production y/o Preview), guarda y vuelve a desplegar."
+  );
+}
+
 fs.mkdirSync(dist, { recursive: true });
 
 for (const f of ["index.html", "app.js"]) {

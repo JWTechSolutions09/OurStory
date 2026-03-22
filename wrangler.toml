@@ -1,5 +1,13 @@
-# Cloudflare Pages (opcional): vincular proyecto desde CLI
-# En la práctica suele configurarse en dashboard: Build command + Output directory
+# Cloudflare Pages — Git integrado
+# El aviso "Build environment variables: (none found)" de Wrangler es normal:
+# las variables NO van en este archivo (no subas la anon key al repo).
+#
+# Dashboard: Workers & Pages → [tu proyecto Pages, ej. OurStory] → Settings → Environment variables
+# - Nombres EXACTOS: SUPABASE_URL   y   SUPABASE_ANON_KEY
+# - SUPABASE_URL = https://xxxx.supabase.co
+# - SUPABASE_ANON_KEY = JWT largo (anon public en Supabase → Settings → API)
+# - Marca Production y Preview si despliegas varias ramas; luego "Retry deployment".
+#
 name = "ourbook"
 compatibility_date = "2024-11-01"
 pages_build_output_dir = "dist"

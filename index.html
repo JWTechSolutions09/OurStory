@@ -450,7 +450,7 @@
 <div class="flex items-start justify-between gap-3 px-5 py-4 border-b border-outline-variant/15 bg-gradient-to-br from-surface-bright to-surface-container-low">
 <div>
 <h2 id="admin-title" class="font-headline italic text-xl text-primary">Panel de administración</h2>
-<p class="text-xs text-on-surface-variant mt-1 font-body max-w-md">Edita la página principal, la galería y los favoritos. Los datos se guardan solo en este navegador.</p>
+<p class="text-xs text-on-surface-variant mt-1 font-body max-w-md">Edita la página principal, la galería y los favoritos. Con sesión Supabase, fotos y textos se guardan también en Storage y en la base de datos.</p>
 </div>
 <button type="button" id="admin-close" class="p-2 rounded-xl hover:bg-surface-container text-on-surface shrink-0" aria-label="Cerrar">
 <span class="material-symbols-outlined">close</span>
@@ -461,6 +461,22 @@
 <button type="button" id="tab-gallery-admin" data-admin-tab="gallery" class="admin-tab px-4 py-3 text-sm font-label border-b-2 border-transparent text-on-surface-variant hover:text-primary transition-colors">Galería <span id="admin-gallery-count" class="ml-1 text-xs opacity-70 tabular-nums">(0)</span></button>
 </div>
 <div class="overflow-y-auto flex-1 min-h-0 p-5 space-y-4">
+<div id="admin-cloud-wrap" class="hidden rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3">
+<p class="text-xs font-label uppercase tracking-wider text-primary">Nube · Supabase</p>
+<p class="text-[11px] text-on-surface-variant leading-snug">Crea un usuario en <strong class="text-on-surface">Authentication</strong> del panel de Supabase (Email). Inicia sesión aquí para subir imágenes a los buckets <code class="text-[10px] bg-surface-container px-1 rounded">ourbook-story</code> y <code class="text-[10px] bg-surface-container px-1 rounded">ourbook-gallery</code>.</p>
+<div id="admin-sb-logged-out" class="space-y-2">
+<label class="block text-sm text-on-surface-variant">Email<input type="email" id="admin-sb-email" class="admin-input" autocomplete="username" placeholder="tu@email.com"/></label>
+<label class="block text-sm text-on-surface-variant">Contraseña<input type="password" id="admin-sb-password" class="admin-input" autocomplete="current-password"/></label>
+<button type="button" id="admin-sb-signin" class="w-full py-2.5 rounded-xl bg-primary text-on-primary font-label text-sm hover:opacity-95">Iniciar sesión en Supabase</button>
+</div>
+<div id="admin-sb-logged-in" class="hidden space-y-2">
+<p class="text-sm text-on-surface font-body">Conectado: <span id="admin-sb-user-email" class="font-medium text-primary"></span></p>
+<div class="flex flex-wrap gap-2">
+<button type="button" id="admin-sb-pull" class="px-4 py-2 rounded-xl border border-outline-variant/50 text-on-surface text-sm font-label hover:bg-surface-container">Traer desde la nube</button>
+<button type="button" id="admin-sb-signout" class="px-4 py-2 rounded-xl text-sm text-primary-dim font-label border border-primary/20 hover:bg-primary/10">Cerrar sesión Supabase</button>
+</div>
+</div>
+</div>
 <div id="panel-story-admin">
 <p class="text-sm text-on-surface-variant mb-4 flex items-start gap-2">
 <span class="material-symbols-outlined text-primary text-lg shrink-0">edit_note</span>

@@ -7,6 +7,9 @@
   const ADMIN_FORM_VERSION = "3";
 
   const VIEW = { STORY: "story", GALLERY: "gallery", FAVORITES: "favorites" };
+  const BUCKET_STORY = "ourbook-story";
+  const BUCKET_GALLERY = "ourbook-gallery";
+  const STORAGE_MAX_BYTES = 5242880;
 
   let pendingAdminTab = "story";
 
@@ -145,6 +148,353 @@
   let currentView = VIEW.STORY;
   let toastTimer = null;
 
+  /** Contexto cuando hay sesión Supabase (RLS + Storage bajo auth.uid()). */
+  let syncCtx = { userId: null, keepsakeId: null };
+  let supabaseAdminWired = false;
+
+  function isUuid(id) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id || ""));
+  }
+
+  function randomUuidV4() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  function hasRemoteSync() {
+    return !!(window.sb && syncCtx.keepsakeId && syncCtx.userId);
+  }
+
+  function publicStorageUrl(bucket, path) {
+    if (!window.sb || !path) return "";
+    const r = window.sb.storage.from(bucket).getPublicUrl(path);
+    return (r && r.data && r.data.publicUrl) || "";
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    const parts = String(dataUrl).split(",");
+    const mime = (parts[0].match(/:(.*?);/) || [])[1] || "image/jpeg";
+    const bstr = atob(parts[1] || "");
+    let n = bstr.length;
+    const u8 = new Uint8Array(n);
+    while (n--) u8[n] = bstr.charCodeAt(n);
+    return new Blob([u8], { type: mime });
+  }
+
+  function refreshSyncContext(user) {
+    const sb = window.sb;
+    return sb
+      .from("keepsakes")
+      .select("id")
+      .eq("owner_id", user.id)
+      .maybeSingle()
+      .then(function (res) {
+        if (res.error) return Promise.reject(res.error);
+        if (res.data && res.data.id) {
+          syncCtx = { userId: user.id, keepsakeId: res.data.id };
+          return;
+        }
+        return sb
+          .from("keepsakes")
+          .insert({ owner_id: user.id })
+          .select("id")
+          .single()
+          .then(function (ins) {
+            if (ins.error) return Promise.reject(ins.error);
+            syncCtx = { userId: user.id, keepsakeId: ins.data.id };
+          });
+      });
+  }
+
+  function mapRowToSlot(row) {
+    const key = row.slot_key;
+    const def = DEFAULT_STORY[key];
+    if (!def) return null;
+    const slot = JSON.parse(JSON.stringify(def));
+    slot.src =
+      row.image_url ||
+      (row.storage_path ? publicStorageUrl(BUCKET_STORY, row.storage_path) : slot.src);
+    if (row.storage_path) slot.storagePath = row.storage_path;
+    if (row.alt != null && row.alt !== "") slot.alt = row.alt;
+    if (row.overlay != null) slot.overlay = row.overlay;
+    if (row.label != null) slot.label = row.label;
+    if (row.side_caption != null) slot.sideCaption = row.side_caption;
+    if (row.caption != null) slot.caption = row.caption;
+    if (row.volume_label != null) slot.volumeLabel = row.volume_label;
+    return slot;
+  }
+
+  function mapPhotoToGalleryItem(row) {
+    const path = row.storage_path;
+    return {
+      id: row.id,
+      src: publicStorageUrl(BUCKET_GALLERY, path),
+      storagePath: path,
+      title: row.title || "",
+      alt: row.alt || "",
+      favorite: !!row.is_favorite,
+      addedAt: new Date(row.created_at || Date.now()).getTime(),
+    };
+  }
+
+  function applyPulledRows(kRow, slotRows, photoRows) {
+    const newStory = cloneDefaults();
+    if (kRow) {
+      if (kRow.hero_title) newStory.heroTitle = kRow.hero_title;
+      if (kRow.hero_subtitle) newStory.heroSubtitle = kRow.hero_subtitle;
+    }
+    (slotRows || []).forEach(function (row) {
+      const mapped = mapRowToSlot(row);
+      if (mapped) newStory[row.slot_key] = mapped;
+    });
+    state.story = newStory;
+    state.gallery = (photoRows || []).map(mapPhotoToGalleryItem);
+    saveState(state);
+  }
+
+  function pullRemoteState() {
+    if (!hasRemoteSync()) return Promise.resolve();
+    const sb = window.sb;
+    const kid = syncCtx.keepsakeId;
+    return sb
+      .from("keepsakes")
+      .select("hero_title, hero_subtitle")
+      .eq("id", kid)
+      .single()
+      .then(function (kr) {
+        if (kr.error) return Promise.reject(kr.error);
+        return sb
+          .from("story_slots")
+          .select("*")
+          .eq("keepsake_id", kid)
+          .then(function (sr) {
+            if (sr.error) return Promise.reject(sr.error);
+            return sb
+              .from("gallery_photos")
+              .select("*")
+              .eq("keepsake_id", kid)
+              .order("sort_order", { ascending: true })
+              .then(function (gr) {
+                if (gr.error) return Promise.reject(gr.error);
+                applyPulledRows(kr.data, sr.data || [], gr.data || []);
+              });
+          });
+      });
+  }
+
+  function snakeStoryFields(slotKey, slot) {
+    const d = DEFAULT_STORY[slotKey] || {};
+    const row = {
+      keepsake_id: syncCtx.keepsakeId,
+      slot_key: slotKey,
+      image_url: slot.src || null,
+      storage_path: slot.storagePath || null,
+      alt: slot.alt != null ? slot.alt : d.alt || "",
+    };
+    if ("overlay" in d) row.overlay = slot.overlay != null ? slot.overlay : d.overlay;
+    if ("label" in d) row.label = slot.label != null ? slot.label : d.label;
+    if ("sideCaption" in d) row.side_caption = slot.sideCaption != null ? slot.sideCaption : d.sideCaption;
+    if ("caption" in d) row.caption = slot.caption != null ? slot.caption : d.caption;
+    if ("volumeLabel" in d) row.volume_label = slot.volumeLabel != null ? slot.volumeLabel : d.volumeLabel;
+    return row;
+  }
+
+  function upsertStorySlotRow(slotKey, slot) {
+    return window.sb
+      .from("story_slots")
+      .upsert(snakeStoryFields(slotKey, slot), { onConflict: "keepsake_id,slot_key" })
+      .then(function (r) {
+        if (r.error) return Promise.reject(r.error);
+      });
+  }
+
+  function pushAllStoryTextsToRemote() {
+    const sb = window.sb;
+    const kid = syncCtx.keepsakeId;
+    const story = readAdminStoryForm();
+    return sb
+      .from("keepsakes")
+      .update({ hero_title: story.heroTitle, hero_subtitle: story.heroSubtitle })
+      .eq("id", kid)
+      .then(function (u) {
+        if (u.error) return Promise.reject(u.error);
+        state.story = story;
+        const jobs = STORY_SLOT_META.map(function (meta) {
+          return upsertStorySlotRow(meta.key, state.story[meta.key] || {});
+        });
+        return Promise.all(jobs);
+      });
+  }
+
+  function uploadStorySlotImage(slotKey, dataUrl) {
+    if (!hasRemoteSync()) return Promise.reject(new Error("Inicia sesión en Supabase para subir a la nube."));
+    const blob = dataUrlToBlob(dataUrl);
+    if (blob.size > STORAGE_MAX_BYTES) {
+      return Promise.reject(new Error("La imagen supera 5 MB (límite del bucket)."));
+    }
+    const path = syncCtx.userId + "/" + slotKey + ".jpg";
+    return window.sb.storage
+      .from(BUCKET_STORY)
+      .upload(path, blob, { contentType: "image/jpeg", upsert: true })
+      .then(function (up) {
+        if (up.error) return Promise.reject(up.error);
+        const pub = publicStorageUrl(BUCKET_STORY, path);
+        state.story[slotKey] = state.story[slotKey] || {};
+        state.story[slotKey].src = pub;
+        state.story[slotKey].storagePath = path;
+        return upsertStorySlotRow(slotKey, state.story[slotKey]);
+      });
+  }
+
+  function uploadGalleryToRemote(dataUrl, title, alt) {
+    if (!hasRemoteSync()) return Promise.reject(new Error("Inicia sesión en Supabase para subir a la nube."));
+    const blob = dataUrlToBlob(dataUrl);
+    if (blob.size > STORAGE_MAX_BYTES) {
+      return Promise.reject(new Error("La imagen supera 5 MB (límite del bucket)."));
+    }
+    const sb = window.sb;
+    const id = randomUuidV4();
+    const path = syncCtx.userId + "/" + id + ".jpg";
+    const sortOrder = state.gallery.length;
+    return sb.storage
+      .from(BUCKET_GALLERY)
+      .upload(path, blob, { contentType: "image/jpeg", upsert: true })
+      .then(function (up) {
+        if (up.error) return Promise.reject(up.error);
+        const pub = publicStorageUrl(BUCKET_GALLERY, path);
+        return sb
+          .from("gallery_photos")
+          .insert({
+            id: id,
+            keepsake_id: syncCtx.keepsakeId,
+            storage_path: path,
+            title: title || "",
+            alt: alt || "",
+            is_favorite: false,
+            sort_order: sortOrder,
+          })
+          .select()
+          .single()
+          .then(function (ins) {
+            if (ins.error) return Promise.reject(ins.error);
+            state.gallery.push({
+              id: ins.data.id,
+              src: pub,
+              storagePath: path,
+              title: ins.data.title || "",
+              alt: ins.data.alt || "",
+              favorite: !!ins.data.is_favorite,
+              addedAt: new Date(ins.data.created_at || Date.now()).getTime(),
+            });
+            saveState(state);
+          });
+      });
+  }
+
+  function updateAdminCloudUI() {
+    const wrap = document.getElementById("admin-cloud-wrap");
+    if (!wrap) return;
+    if (!window.sb) {
+      wrap.classList.add("hidden");
+      return;
+    }
+    wrap.classList.remove("hidden");
+    const out = document.getElementById("admin-sb-logged-out");
+    const inn = document.getElementById("admin-sb-logged-in");
+    const emailEl = document.getElementById("admin-sb-user-email");
+    window.sb.auth.getSession().then(function (res) {
+      const session = res.data && res.data.session;
+      if (session && session.user) {
+        if (out) out.classList.add("hidden");
+        if (inn) inn.classList.remove("hidden");
+        if (emailEl) emailEl.textContent = session.user.email || "";
+      } else {
+        if (inn) inn.classList.add("hidden");
+        if (out) out.classList.remove("hidden");
+        if (emailEl) emailEl.textContent = "";
+      }
+    });
+  }
+
+  function wireSupabaseAdmin() {
+    if (!window.sb || supabaseAdminWired) return;
+    supabaseAdminWired = true;
+    window.sb.auth.onAuthStateChange(function (event) {
+      if (event === "SIGNED_OUT") {
+        syncCtx = { userId: null, keepsakeId: null };
+        updateAdminCloudUI();
+      }
+    });
+
+    document.getElementById("admin-sb-signin")?.addEventListener("click", function () {
+      const emailIn = document.getElementById("admin-sb-email");
+      const passIn = document.getElementById("admin-sb-password");
+      const email = ((emailIn && emailIn.value) || "").trim();
+      const password = (passIn && passIn.value) || "";
+      if (!email || !password) {
+        alert("Introduce email y contraseña de tu usuario en Supabase.");
+        return;
+      }
+      window.sb.auth
+        .signInWithPassword({ email: email, password: password })
+        .then(function (res) {
+          if (res.error) {
+            alert(res.error.message || "No se pudo iniciar sesión. Revisa el usuario en Authentication.");
+            return;
+          }
+          return refreshSyncContext(res.data.user)
+            .then(function () {
+              return pullRemoteState();
+            })
+            .then(function () {
+              applyStoryToPage();
+              fillAdminStoryForm();
+              renderAdminGalleryList();
+              refreshGalleryViews();
+              updateGalleryCountBadge();
+              updateAdminCloudUI();
+              showToast("Conectado a Supabase; datos cargados desde la nube");
+            });
+        })
+        .catch(function (e) {
+          console.error(e);
+          alert(e.message || "Error de conexión con Supabase");
+        });
+    });
+
+    document.getElementById("admin-sb-signout")?.addEventListener("click", function () {
+      window.sb.auth.signOut().then(function () {
+        syncCtx = { userId: null, keepsakeId: null };
+        updateAdminCloudUI();
+        showToast("Sesión Supabase cerrada");
+      });
+    });
+
+    document.getElementById("admin-sb-pull")?.addEventListener("click", function () {
+      if (!hasRemoteSync()) {
+        alert("Inicia sesión primero.");
+        return;
+      }
+      pullRemoteState()
+        .then(function () {
+          applyStoryToPage();
+          fillAdminStoryForm();
+          renderAdminGalleryList();
+          refreshGalleryViews();
+          updateGalleryCountBadge();
+          showToast("Sincronizado desde la nube");
+        })
+        .catch(function (e) {
+          console.error(e);
+          alert(e.message || "No se pudo traer datos");
+        });
+    });
+  }
+
   function uid() {
     return "g_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 9);
   }
@@ -271,16 +621,48 @@
     const item = galleryItemById(id);
     if (!item) return;
     item.favorite = !item.favorite;
+    if (hasRemoteSync() && item.storagePath && isUuid(item.id) && window.sb) {
+      window.sb
+        .from("gallery_photos")
+        .update({ is_favorite: item.favorite })
+        .eq("id", item.id)
+        .then(function (r) {
+          if (r.error) console.error(r.error);
+        });
+    }
     saveState(state);
     refreshGalleryViews();
   }
 
   function deleteGalleryItem(id) {
-    state.gallery = state.gallery.filter(function (g) {
-      return g.id !== id;
-    });
-    saveState(state);
-    refreshGalleryViews();
+    const item = galleryItemById(id);
+    const applyLocal = function () {
+      state.gallery = state.gallery.filter(function (g) {
+        return g.id !== id;
+      });
+      saveState(state);
+      refreshGalleryViews();
+    };
+    if (!item) return;
+    if (hasRemoteSync() && item.storagePath && isUuid(item.id) && window.sb) {
+      window.sb.storage
+        .from(BUCKET_GALLERY)
+        .remove([item.storagePath])
+        .then(function (rm) {
+          if (rm.error) return Promise.reject(rm.error);
+          return window.sb.from("gallery_photos").delete().eq("id", item.id);
+        })
+        .then(function (r) {
+          if (r && r.error) return Promise.reject(r.error);
+          applyLocal();
+        })
+        .catch(function (e) {
+          console.error(e);
+          alert("No se pudo eliminar en la nube. ¿Sesión activa?");
+        });
+      return;
+    }
+    applyLocal();
   }
 
   function renderGalleryGrid() {
@@ -645,6 +1027,7 @@
     initAdminStoryFormOnce();
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
+    updateAdminCloudUI();
     fillAdminStoryForm();
     renderAdminGalleryList();
     updateGalleryCountBadge();
@@ -721,6 +1104,19 @@
     });
 
     document.getElementById("admin-save-story")?.addEventListener("click", function () {
+      if (hasRemoteSync()) {
+        pushAllStoryTextsToRemote()
+          .then(function () {
+            saveState(state);
+            applyStoryToPage();
+            showToast("Cambios guardados en la nube");
+          })
+          .catch(function (e) {
+            console.error(e);
+            alert(e.message || "Error al guardar en Supabase");
+          });
+        return;
+      }
       state.story = readAdminStoryForm();
       saveState(state);
       applyStoryToPage();
@@ -735,8 +1131,22 @@
       if (!file) return;
       fileToDataUrl(file)
         .then(function (dataUrl) {
+          if (hasRemoteSync()) {
+            return uploadStorySlotImage(key, dataUrl).then(function () {
+              saveState(state);
+              applyStoryToPage();
+              const prev = document.querySelector('[data-story-preview="' + key + '"]');
+              if (prev) {
+                prev.src = state.story[key].src;
+                prev.classList.remove("hidden");
+              }
+              t.value = "";
+              showToast("Imagen subida a la nube");
+            });
+          }
           state.story[key] = state.story[key] || {};
           state.story[key].src = dataUrl;
+          delete state.story[key].storagePath;
           saveState(state);
           applyStoryToPage();
           const prev = document.querySelector('[data-story-preview="' + key + '"]');
@@ -763,11 +1173,24 @@
       }
       fileToDataUrl(file)
         .then(function (dataUrl) {
+          const title = (titleIn && titleIn.value.trim()) || "";
+          const alt = (altIn && altIn.value.trim()) || "";
+          if (hasRemoteSync()) {
+            return uploadGalleryToRemote(dataUrl, title, alt).then(function () {
+              if (titleIn) titleIn.value = "";
+              if (altIn) altIn.value = "";
+              if (fileIn) fileIn.value = "";
+              renderAdminGalleryList();
+              updateGalleryCountBadge();
+              refreshGalleryViews();
+              showToast("Foto subida al bucket y guardada en la base");
+            });
+          }
           state.gallery.push({
             id: uid(),
             src: dataUrl,
-            title: (titleIn && titleIn.value.trim()) || "",
-            alt: (altIn && altIn.value.trim()) || "",
+            title: title,
+            alt: alt,
             favorite: false,
             addedAt: Date.now(),
           });
@@ -874,7 +1297,9 @@
     if (m && !m.classList.contains("hidden")) closeAdmin();
   });
 
-  function startApp() {
+  function finishStartApp() {
+    wireSupabaseAdmin();
+    updateAdminCloudUI();
     applyStoryToPage();
     wireDelegatedClicks();
     wireAdminGate();
@@ -883,6 +1308,32 @@
     updateGalleryCountBadge();
     initRevealOnScroll();
     showView(VIEW.STORY);
+  }
+
+  function startApp() {
+    if (window.sb) {
+      window.sb.auth
+        .getSession()
+        .then(function (res) {
+          const session = res.data && res.data.session;
+          if (session && session.user) {
+            return refreshSyncContext(session.user)
+              .then(function () {
+                return pullRemoteState();
+              })
+              .catch(function (e) {
+                console.warn("OurBook: no se pudo cargar desde Supabase", e);
+              })
+              .finally(finishStartApp);
+          }
+          finishStartApp();
+        })
+        .catch(function () {
+          finishStartApp();
+        });
+      return;
+    }
+    finishStartApp();
   }
 
   var boot = window._ourbookBoot;
