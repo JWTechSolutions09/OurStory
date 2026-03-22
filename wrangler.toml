@@ -2,7 +2,8 @@
 # El aviso "Build environment variables: (none found)" de Wrangler es normal:
 # las variables NO van en este archivo (no subas la anon key al repo).
 #
-# Dashboard: Workers & Pages → [tu proyecto Pages, ej. OurStory] → Settings → Environment variables
+# Variables: proyecto Pages → Settings → Environment variables (SUPABASE_URL, SUPABASE_ANON_KEY).
+# La Function functions/env.js/index.js las lee en runtime al pedir /env.js.
 # - Nombres EXACTOS: SUPABASE_URL   y   SUPABASE_ANON_KEY
 # - SUPABASE_URL = https://xxxx.supabase.co
 # - SUPABASE_ANON_KEY = JWT largo (anon public en Supabase → Settings → API)
