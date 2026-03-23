@@ -489,9 +489,11 @@
 <div class="flex flex-wrap gap-2 px-6 py-3 border-b border-outline-variant/10 bg-surface-bright/80">
 <button type="button" id="tab-story" data-admin-tab="story" class="admin-tab admin-tab-pill admin-tab-pill--active px-5 py-2.5 text-sm font-label text-primary">Página principal</button>
 <button type="button" id="tab-gallery-admin" data-admin-tab="gallery" class="admin-tab admin-tab-pill px-5 py-2.5 text-sm font-label text-on-surface-variant">Galería <span id="admin-gallery-count" class="ml-1 text-xs opacity-70 tabular-nums">(0)</span></button>
+<button type="button" id="tab-db-admin" data-admin-tab="database" class="admin-tab admin-tab-pill px-5 py-2.5 text-sm font-label text-on-surface-variant">Base de datos</button>
 </div>
 <div class="overflow-y-auto flex-1 min-h-0 px-6 py-5 space-y-5">
-<div id="admin-remote-wrap" class="hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-surface-bright p-5 space-y-4">
+<div id="panel-db-admin" class="hidden">
+<div id="admin-remote-wrap" class="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-surface-bright p-5 space-y-4">
 <div class="flex flex-col sm:flex-row sm:items-start gap-4">
 <div class="flex items-start gap-3 min-w-0 flex-1">
 <span class="material-symbols-outlined text-primary text-2xl shrink-0" aria-hidden="true">database</span>
@@ -512,6 +514,7 @@
 </div>
 </div>
 <p class="text-[11px] text-on-surface-variant/85 leading-snug border-t border-outline-variant/15 pt-3">Las fotos se guardan dentro del JSON (base64). Si falla el envío por tamaño, reduce fotos o calidad. Usa <strong class="text-on-surface">Subir todo ahora</strong> tras muchos cambios.</p>
+</div>
 </div>
 <div id="panel-story-admin">
 <div class="rounded-2xl border border-outline-variant/20 bg-surface-bright/60 p-4 mb-4 flex gap-3">

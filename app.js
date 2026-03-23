@@ -214,10 +214,16 @@
   let galleryPendingDataUrl = null;
 
   function refreshAdminRemoteBanner() {
-    const wrap = document.getElementById("admin-remote-wrap");
-    if (!wrap) return;
-    if (window.sb) wrap.classList.remove("hidden");
-    else wrap.classList.add("hidden");
+    const dbTabBtn = document.getElementById("tab-db-admin");
+    const dbPanel = document.getElementById("panel-db-admin");
+    if (dbTabBtn) dbTabBtn.classList.toggle("hidden", !window.sb);
+    if (dbPanel) dbPanel.classList.toggle("hidden", !window.sb);
+    if (!window.sb) {
+      const modal = document.getElementById("admin-modal");
+      if (modal && modal.dataset.currentAdminTab === "database") {
+        setAdminTab("story");
+      }
+    }
   }
 
   function clearGalleryPending() {
@@ -914,18 +920,25 @@
   }
 
   function setAdminTab(tab) {
+    if (tab === "database" && !window.sb) tab = "story";
     const isStory = tab === "story";
+    const isGallery = tab === "gallery";
+    const isDatabase = tab === "database";
     document.querySelectorAll(".admin-tab").forEach(function (btn) {
       const t = btn.getAttribute("data-admin-tab");
-      const on = (t === "story" && isStory) || (t === "gallery" && !isStory);
+      const on = t === tab;
       btn.classList.toggle("admin-tab-pill--active", on);
       btn.classList.toggle("text-primary", on);
       btn.classList.toggle("text-on-surface-variant", !on);
     });
+    const modal = document.getElementById("admin-modal");
+    if (modal) modal.dataset.currentAdminTab = tab;
     const pStory = document.getElementById("panel-story-admin");
     const pGal = document.getElementById("panel-gallery-admin");
+    const pDb = document.getElementById("panel-db-admin");
     if (pStory) pStory.classList.toggle("hidden", !isStory);
-    if (pGal) pGal.classList.toggle("hidden", isStory);
+    if (pGal) pGal.classList.toggle("hidden", !isGallery);
+    if (pDb) pDb.classList.toggle("hidden", !isDatabase);
     const saveBtn = document.getElementById("admin-save-story");
     if (saveBtn) saveBtn.classList.toggle("hidden", !isStory);
   }
@@ -971,6 +984,9 @@
     });
     document.getElementById("tab-gallery-admin")?.addEventListener("click", function () {
       setAdminTab("gallery");
+    });
+    document.getElementById("tab-db-admin")?.addEventListener("click", function () {
+      setAdminTab("database");
     });
 
     document.getElementById("admin-save-story")?.addEventListener("click", function () {
