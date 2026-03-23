@@ -15,52 +15,100 @@
     heroTitle: "Our Beautiful Memories",
     heroSubtitle: "Every moment captured, every heart shared.",
     mainLarge: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCTzphZejbi0rXJAqG_7kbFTNDxbp5geTh4AXEjFqMj-nAnXxK5hqG5XxovERB0JghmosnmqdPIDgFX3TBeYRjt5Cy1qhaqNavUqtiDNS4vIOFfSyIrfr4W8Y4_KYfBymdY3dZhUbmoK9_jiTazpQksp5EX1rIZg4NGQCa5jjB4MqLmfhjRA-DCGS2Q9c2jrWe0FND_epEyxU4hwZsfAJKgw6enwgwxGssEEhT4Qy1s0v9heP-bVqdgt0j2ezALt8SBaXg6kCbcJQ",
-      alt: "A romantic couple walking on the beach at sunset",
-      overlay: '"The sunset was beautiful, but I couldn\'t stop looking at you."',
-      label: "Malibu Beach • June 2023",
+      src: "public/Navidad%202025%20-%20Primera%20foto.jpg",
+      alt: "Navidad 2025 - Primera foto 🤍😍",
+      overlay: "Navidad contigo sabe a hogar 🤍🥰",
+      label: "Navidad 2025 • Mi amor 🤍",
     },
     smallSquare: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCQ8FXJxTdb0uVDSQfAKHYoeQ6cO7hCPg1rQ5cA18soUKtMGzjQnRQI1m3SdqUbjSWGH5m2Tvm5z-oM0yzUolyiDBdIaUv9RrQkvUZFerwmbK7uXvGFfSscMAcAsMv1M7x70G6nKiZvHnSr6EGkpF-_HFP9yBDGvNVe0DGGP4hFcksvhf5xGglkN9wBEVC8Dj4GcyMYyMvAYGeTWDRRTROZd1wXNI90Y7p78QeMXbydMEs4kvjp0Z5TzBnKEuzf2pB27Kv6R8yX1g",
-      alt: "Close up of two hands holding espresso cups",
-      overlay: "First date coffee. Still remember your order.",
-      sideCaption: "— The Beginning",
+      src: "public/The%20Beginning.jpg",
+      alt: "The Beginning 🤍😍",
+      overlay: "The Beginning: aquí empezó nuestro para siempre 🤍🥰",
+      sideCaption: "— The Beginning 🤍",
     },
     polaroid: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDY0kuD1STjh1KQzqp9iJgHCE-rexUdUFCGbChGtN7vUSOQcYKWVadMskZ2dmlT-6scMqiudAkrjd9Gz5dRUtwS6HGesVH92O2j7VB1NufRdJ0oKcr0eByd0UylCmdP4zuoYotwYpebxh6j6ncyoTdoqsyQVGQ1bVHu2Pxa3iaPKKnq892Y8s3tZJeGuNENaCj6zR92G9D9WBWLZbtGU0gplW8kLs8aUaHEGCRX24204Zx0rREFakNRs8UvRuNgsyO-eD-d5qfauQ",
-      alt: "Hands holding heart",
-      caption: "Piece of my heart",
+      src: "public/Playita%20Otra%20vez.jpg",
+      alt: "Playita Otra vez 🤍😍",
+      caption: "Playita otra vez… y te elijo otra vez 🤍😍",
     },
     cutout: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuD-i9He6mIEpEcXxAiE-HasYSzq9mIIyfRuRuztEA4MB8D8MLK0EC1-6tfFMH732fnTae3SMto-PRsBZBdTAYrPgiTDrMbQb1YNm-Q27Q3PjGI4Ke3PC3f6VJsWoPkYnFjBJmz9asuhCYLU5fcJQ02x7mDGySEZLjz9Jn0uNxl2PrM0IshbshQPPemFGwrZz1018vkKjGhJw2-Nt95DXCgj40WMcpK5ZdAekXbxQ-IlJkCc72YZNfVwz161v1q7uVWjAYuo-14YFw",
-      alt: "Rings",
+      src: "public/Mi%20vida.jpg",
+      alt: "Mi vida 🤍😍",
     },
     portrait: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCCP2kMyf4K3-Sgjct65FobpXaPWjvGoRNzxeouc14sNcc38X45VZWNQWAMFugUH32CHnHYC3y01UsV8_fI0EpFe-yhxQlOgrsBgnW3d2-4-SGctIRk5u4l80BxVB-hee4upgHky5Bm2YeeW7aA3M_1cB1fRmGA_u8WLBq6_Pd9DaYeJO3OcE5UlSNuj-z49OT4OFNJV1wkNghViS8WwRM9VmD07aDpDsltkq0ICAHuZq9wcdvljSO_1XrLCgYZolyy8c7rvhc6bg",
-      alt: "Flower field laughing",
+      src: "public/Siempre%20te%20amare.jpg",
+      alt: "Siempre te amare 🤍🥰",
     },
     mini1: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuD-i9He6mIEpEcXxAiE-HasYSzq9mIIyfRuRuztEA4MB8D8MLK0EC1-6tfFMH732fnTae3SMto-PRsBZBdTAYrPgiTDrMbQb1YNm-Q27Q3PjGI4Ke3PC3f6VJsWoPkYnFjBJmz9asuhCYLU5fcJQ02x7mDGySEZLjz9Jn0uNxl2PrM0IshbshQPPemFGwrZz1018vkKjGhJw2-Nt95DXCgj40WMcpK5ZdAekXbxQ-IlJkCc72YZNfVwz161v1q7uVWjAYuo-14YFw",
-      alt: "Ring detail",
+      src: "public/Jetsky.jpg",
+      alt: "Jetsky 🤍😍",
     },
     mini2: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCQ8FXJxTdb0uVDSQfAKHYoeQ6cO7hCPg1rQ5cA18soUKtMGzjQnRQI1m3SdqUbjSWGH5m2Tvm5z-oM0yzUolyiDBdIaUv9RrQkvUZFerwmbK7uXvGFfSscMAcAsMv1M7x70G6nKiZvHnSr6EGkpF-_HFP9yBDGvNVe0DGGP4hFcksvhf5xGglkN9wBEVC8Dj4GcyMYyMvAYGeTWDRRTROZd1wXNI90Y7p78QeMXbydMEs4kvjp0Z5TzBnKEuzf2pB27Kv6R8yX1g",
-      alt: "Coffee cups",
+      src: "public/Cada%20atardecer%20contigo%20es%20el%20mejor.jpg",
+      alt: "Cada atardecer contigo es el mejor 🤍😍",
     },
     mini3: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDY0kuD1STjh1KQzqp9iJgHCE-rexUdUFCGbChGtN7vUSOQcYKWVadMskZ2dmlT-6scMqiudAkrjd9Gz5dRUtwS6HGesVH92O2j7VB1NufRdJ0oKcr0eByd0UylCmdP4zuoYotwYpebxh6j6ncyoTdoqsyQVGQ1bVHu2Pxa3iaPKKnq892Y8s3tZJeGuNENaCj6zR92G9D9WBWLZbtGU0gplW8kLs8aUaHEGCRX24204Zx0rREFakNRs8UvRuNgsyO-eD-d5qfauQ",
-      alt: "Heart shape",
+      src: "public/En%20yola%20para%20PR.jpg",
+      alt: "En yola para PR 🤍🥰",
     },
     mini4: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCTzphZejbi0rXJAqG_7kbFTNDxbp5geTh4AXEjFqMj-nAnXxK5hqG5XxovERB0JghmosnmqdPIDgFX3TBeYRjt5Cy1qhaqNavUqtiDNS4vIOFfSyIrfr4W8Y4_KYfBymdY3dZhUbmoK9_jiTazpQksp5EX1rIZg4NGQCa5jjB4MqLmfhjRA-DCGS2Q9c2jrWe0FND_epEyxU4hwZsfAJKgw6enwgwxGssEEhT4Qy1s0v9heP-bVqdgt0j2ezALt8SBaXg6kCbcJQ",
-      alt: "Beach walk",
+      src: "public/Mi%20princesa.jpg",
+      alt: "Mi princesa 🤍😍",
     },
     letterPhoto: {
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCCP2kMyf4K3-Sgjct65FobpXaPWjvGoRNzxeouc14sNcc38X45VZWNQWAMFugUH32CHnHYC3y01UsV8_fI0EpFe-yhxQlOgrsBgnW3d2-4-SGctIRk5u4l80BxVB-hee4upgHky5Bm2YeeW7aA3M_1cB1fRmGA_u8WLBq6_Pd9DaYeJO3OcE5UlSNuj-z49OT4OFNJV1wkNghViS8WwRM9VmD07aDpDsltkq0ICAHuZq9wcdvljSO_1XrLCgYZolyy8c7rvhc6bg",
-      alt: "Laughing in field",
-      volumeLabel: "Captured Memories • Vol. 1",
+      src: "public/Primer%20restaurante.jpg",
+      alt: "Primer restaurante 🤍🥰",
+      volumeLabel: "Captured Memories • Vol. 1 🤍",
     },
   };
+
+  const DEFAULT_GALLERY_FILES = [
+    "The Beginning.jpg",
+    "2 locos.jpg",
+    "Restaurante con mi princesa.jpg",
+    "Lo mas hermoso.jpg",
+    "Mi modelito.jpg",
+    "Comiidita en la monta;a.jpg",
+    "Mi hermosa.jpg",
+    "La amo.jpg",
+    "Con el sobri.jpg",
+    "Playita de neuvo.jpg",
+    "En yola para PR.jpg",
+    "Love.jpg",
+    "HBDDDD.jpg",
+    "Riito.jpg",
+    "Jetsky.jpg",
+    "Siempre juntos.jpg",
+    "Volviendo de PR en yola.jpg",
+    "Puerto Plata.jpg",
+    "Mi chichi.jpg",
+    "Anillo de promesa.jpg",
+    "Primer restaurante.jpg",
+    "Ok.jpg",
+    "Navidad 2025 - Primera foto.jpg",
+    "Floress.jpg",
+    "Siempre te amare.jpg",
+    "Playita.jpg",
+    "Mi vida.jpg",
+    "Cada atardecer contigo es el mejor.jpg",
+    "Mi princesa.jpg",
+    "Primera vez juntos en el Play.jpg",
+    "Playita Otra vez.jpg",
+    "Puerto Plataa.jpg",
+    "Taquitos.jpg",
+  ];
+
+  const DEFAULT_GALLERY = DEFAULT_GALLERY_FILES.map(function (fileName, idx) {
+    const title = fileName.replace(/\.[^/.]+$/, "");
+    return {
+      id: "g_seed_" + (idx + 1),
+      src: "public/" + encodeURIComponent(fileName),
+      title: title,
+      alt: title + " 🤍😍",
+      favorite: idx < 12,
+      addedAt: 1735689600000 + idx * 86400000,
+    };
+  });
 
   /** Qué campos de texto tiene cada slot en el DOM (selector relativo al slot) */
   const STORY_SLOT_TEXT_BINDINGS = [
@@ -123,7 +171,7 @@
 
   /** Estado inicial en memoria hasta cargar desde Supabase (nunca se persiste en localStorage). */
   function emptyState() {
-    return { story: cloneDefaults(), gallery: [] };
+    return { story: cloneDefaults(), gallery: JSON.parse(JSON.stringify(DEFAULT_GALLERY)) };
   }
 
   let noSupabaseWarned = false;
@@ -457,12 +505,12 @@
         const fill = item.favorite ? "1" : "0";
         return (
           '<div class="relative bg-surface-container-lowest p-3 sm:p-4 sticker-shadow rounded-xl group w-full max-w-md mx-auto">' +
-          '<div class="ourbook-photo-frame rounded-xl overflow-hidden flex items-center justify-center min-h-[10rem] max-h-[min(85vh,720px)]">' +
+          '<div class="ourbook-photo-frame rounded-xl overflow-hidden flex items-center justify-center">' +
           '<img src="' +
           escapeAttr(item.src) +
           '" alt="' +
           escapeAttr(item.alt || "") +
-          '" class="w-full h-auto max-h-[min(85vh,720px)] object-contain" loading="lazy"/>' +
+          '" class="w-full h-auto object-contain" loading="lazy"/>' +
           "</div>" +
           (item.title
             ? '<p class="mt-2 font-headline italic text-sm text-on-surface text-center truncate">' +
@@ -501,12 +549,12 @@
       .map(function (item) {
         return (
           '<div class="relative bg-surface-container-lowest p-3 sm:p-4 sticker-shadow rounded-xl w-full max-w-md mx-auto">' +
-          '<div class="ourbook-photo-frame rounded-xl overflow-hidden flex items-center justify-center min-h-[10rem] max-h-[min(85vh,720px)]">' +
+          '<div class="ourbook-photo-frame rounded-xl overflow-hidden flex items-center justify-center">' +
           '<img src="' +
           escapeAttr(item.src) +
           '" alt="' +
           escapeAttr(item.alt || "") +
-          '" class="w-full h-auto max-h-[min(85vh,720px)] object-contain" loading="lazy"/>' +
+          '" class="w-full h-auto object-contain" loading="lazy"/>' +
           "</div>" +
           (item.title
             ? '<p class="mt-2 font-headline italic text-sm text-on-surface text-center truncate">' +

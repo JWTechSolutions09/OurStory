@@ -229,9 +229,7 @@
             color: #984e56;
         }
         /* Imágenes de historia / galería: mostrar completa sin recorte */
-        .ourbook-photo-frame {
-            background: linear-gradient(180deg, #f7f3ed 0%, #ebe8e1 100%);
-        }
+        .ourbook-photo-frame { background: transparent; }
         img[data-slot-img] {
             object-fit: contain;
             object-position: center;
@@ -287,7 +285,7 @@
 <div class="md:col-span-7 relative group cursor-pointer transition-transform duration-500 hover:scale-[1.01] reveal-on-scroll hover-lift" data-story-slot="mainLarge">
 <div class="absolute -top-4 -left-4 washi-tape w-24 h-10 rotate-[-15deg] z-20"></div>
 <div class="bg-surface-container-lowest p-4 sticker-shadow rotate-1 transform-gpu">
-<div class="aspect-[4/3] overflow-hidden relative ourbook-photo-frame">
+<div class="overflow-hidden relative ourbook-photo-frame">
 <img data-slot-img class="w-full h-full grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" alt="" src=""/>
 <div class="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center p-8 text-center">
 <p data-slot-overlay class="font-headline italic text-on-primary text-2xl"></p>
@@ -376,28 +374,28 @@
 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
 <!-- Mini Sticker 1 -->
 <div class="relative bg-surface-container-lowest p-2 sticker-shadow rotate-[-3deg] hover:rotate-0 transition-all cursor-pointer group" data-story-slot="mini1">
-<div class="aspect-square overflow-hidden bg-surface-container ourbook-photo-frame">
-<img data-slot-img class="w-full h-full opacity-90 group-hover:opacity-100" alt="" src=""/>
+<div class="overflow-hidden bg-surface-container ourbook-photo-frame rounded-sm">
+<img data-slot-img class="w-full h-auto opacity-90 group-hover:opacity-100" alt="" src=""/>
 </div>
 <div class="absolute top-0 right-0 washi-tape w-8 h-8 opacity-40"></div>
 </div>
 <!-- Mini Sticker 2 -->
 <div class="relative bg-surface-container-lowest p-2 sticker-shadow rotate-[5deg] hover:rotate-0 transition-all cursor-pointer group mt-8" data-story-slot="mini2">
-<div class="aspect-square overflow-hidden bg-surface-container ourbook-photo-frame">
-<img data-slot-img class="w-full h-full opacity-90 group-hover:opacity-100" alt="" src=""/>
+<div class="overflow-hidden bg-surface-container ourbook-photo-frame rounded-sm">
+<img data-slot-img class="w-full h-auto opacity-90 group-hover:opacity-100" alt="" src=""/>
 </div>
 </div>
 <!-- Mini Sticker 3 -->
 <div class="relative bg-surface-container-lowest p-2 sticker-shadow rotate-[-2deg] hover:rotate-0 transition-all cursor-pointer group" data-story-slot="mini3">
-<div class="aspect-square overflow-hidden bg-surface-container ourbook-photo-frame">
-<img data-slot-img class="w-full h-full opacity-90 group-hover:opacity-100" alt="" src=""/>
+<div class="overflow-hidden bg-surface-container ourbook-photo-frame rounded-sm">
+<img data-slot-img class="w-full h-auto opacity-90 group-hover:opacity-100" alt="" src=""/>
 </div>
 <span class="material-symbols-outlined absolute -bottom-3 -left-2 text-primary-fixed-dim rotate-[-20deg]">draw</span>
 </div>
 <!-- Mini Sticker 4 -->
 <div class="relative bg-surface-container-lowest p-2 sticker-shadow rotate-[7deg] hover:rotate-0 transition-all cursor-pointer group mt-4" data-story-slot="mini4">
-<div class="aspect-square overflow-hidden bg-surface-container ourbook-photo-frame">
-<img data-slot-img class="w-full h-full opacity-90 group-hover:opacity-100" alt="" src=""/>
+<div class="overflow-hidden bg-surface-container ourbook-photo-frame rounded-sm">
+<img data-slot-img class="w-full h-auto opacity-90 group-hover:opacity-100" alt="" src=""/>
 </div>
 </div>
 </div>
