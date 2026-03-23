@@ -8,6 +8,7 @@
   const ADMIN_FORM_VERSION = "4";
 
   const VIEW = { STORY: "story", GALLERY: "gallery", FAVORITES: "favorites" };
+  const STORAGE_BUCKET = "ourbook-media";
 
   let pendingAdminTab = "story";
 
@@ -176,6 +177,70 @@
     return v;
   }
 
+  function isDataUrl(src) {
+    return /^data:image\//i.test(String(src || ""));
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    const parts = String(dataUrl || "").split(",");
+    const header = parts[0] || "";
+    const base64 = parts[1] || "";
+    const mime = (header.match(/data:(.*?);base64/i) || [])[1] || "image/jpeg";
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  function safeIdPart(input) {
+    return String(input || "item")
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 60);
+  }
+
+  function guessExtFromMime(mime) {
+    if (/png/i.test(mime)) return "png";
+    if (/webp/i.test(mime)) return "webp";
+    if (/gif/i.test(mime)) return "gif";
+    return "jpg";
+  }
+
+  function storagePublicUrl(path) {
+    if (!window.sb || !path) return "";
+    const r = window.sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+    return (r && r.data && r.data.publicUrl) || "";
+  }
+
+  function extractStoragePathFromSrc(src) {
+    const value = String(src || "");
+    if (!/^https?:\/\//i.test(value)) return "";
+    const marker = "/storage/v1/object/public/" + STORAGE_BUCKET + "/";
+    const idx = value.indexOf(marker);
+    if (idx < 0) return "";
+    return value.slice(idx + marker.length);
+  }
+
+  function uploadDataUrlToStorage(dataUrl, folder, hint) {
+    if (!window.sb) return Promise.reject(new Error("Supabase no disponible"));
+    const blob = dataUrlToBlob(dataUrl);
+    const ext = guessExtFromMime(blob.type || "");
+    const file = safeIdPart(hint);
+    const path = folder + "/" + Date.now() + "-" + file + "." + ext;
+    return window.sb.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, blob, { contentType: blob.type || "image/jpeg", upsert: false })
+      .then(function (up) {
+        if (up.error) return Promise.reject(up.error);
+        return {
+          src: storagePublicUrl(path),
+          storagePath: path,
+        };
+      });
+  }
+
   try {
     localStorage.removeItem(LEGACY_STORAGE_KEY);
   } catch (_) {}
@@ -255,16 +320,17 @@
   }
 
   /** Tamaño aproximado del JSON que enviamos (límite práctico ~5 MB en muchos hosts). */
-  function estimateOurbookPayloadBytes() {
+  function estimateOurbookPayloadBytes(payload) {
+    const body =
+      payload ||
+      {
+        id: "default",
+        story: state.story,
+        gallery: state.gallery,
+        updated_at: new Date().toISOString(),
+      };
     try {
-      return new TextEncoder().encode(
-        JSON.stringify({
-          id: "default",
-          story: state.story,
-          gallery: state.gallery,
-          updated_at: new Date().toISOString(),
-        })
-      ).length;
+      return new TextEncoder().encode(JSON.stringify(body)).length;
     } catch (e) {
       console.warn("OurBook: no se pudo medir el payload", e);
       return 0;
@@ -276,13 +342,13 @@
   function formatSupabaseError(e) {
     const msg = (e && e.message) || String(e || "");
     if (/payload too large|413|entity too large|body exceeded/i.test(msg)) {
-      return "El envío es demasiado grande (muchas fotos o imágenes muy pesadas). Borra algunas de la galería o usa fotos más pequeñas, luego pulsa «Subir todo ahora».";
+      return "El envío sigue siendo grande. Reintenta: ahora las nuevas fotos se suben a Storage y solo se guarda la URL en la base de datos.";
     }
     if (/JWT|Invalid API key|invalid.*key/i.test(msg)) {
       return "La clave o la URL de Supabase no son válidas. Revisa env.js o las variables del build.";
     }
     if (/RLS|permission denied|policy|42501/i.test(msg)) {
-      return "Sin permiso en la base de datos. Ejecuta de nuevo supabase/ourbook.sql (políticas para anon).";
+      return "Sin permisos en Supabase (tabla o Storage). Ejecuta de nuevo supabase/ourbook.sql.";
     }
     if (/Failed to fetch|NetworkError|network/i.test(msg)) {
       return "No hay conexión o el servidor no respondió. Comprueba la red e inténtalo otra vez.";
@@ -311,28 +377,63 @@
 
   function pushStateToSupabase() {
     if (!window.sb) return Promise.resolve();
-    const bytes = estimateOurbookPayloadBytes();
-    if (bytes > MAX_PAYLOAD_BYTES) {
-      const err = new Error(
-        "Los datos superan ~4,5 MB. Reduce imágenes en la galería o en los bloques de la historia."
-      );
-      return Promise.reject(err);
-    }
-    return window.sb
-      .from("ourbook_state")
-      .upsert(
-        {
-          id: "default",
-          story: state.story,
-          gallery: state.gallery,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
-      )
-      .then(function (r) {
-        if (r.error) return Promise.reject(r.error);
-        setAdminRemoteStatus("Guardado en la base de datos correctamente.");
-      });
+    const story = JSON.parse(JSON.stringify(state.story || {}));
+    const gallery = JSON.parse(JSON.stringify(state.gallery || []));
+
+    const jobs = [];
+    STORY_SLOT_META.forEach(function (meta) {
+      const slot = story[meta.key];
+      if (!slot || !slot.src) return;
+      if (isDataUrl(slot.src)) {
+        jobs.push(
+          uploadDataUrlToStorage(slot.src, "story", meta.key).then(function (up) {
+            slot.src = up.src;
+            slot.storagePath = up.storagePath;
+          })
+        );
+      } else if (!slot.storagePath) {
+        const path = extractStoragePathFromSrc(slot.src);
+        if (path) slot.storagePath = path;
+      }
+    });
+    gallery.forEach(function (item, idx) {
+      if (!item || !item.src) return;
+      if (isDataUrl(item.src)) {
+        jobs.push(
+          uploadDataUrlToStorage(item.src, "gallery", item.id || "item-" + idx).then(function (up) {
+            item.src = up.src;
+            item.storagePath = up.storagePath;
+          })
+        );
+      } else if (!item.storagePath) {
+        const path = extractStoragePathFromSrc(item.src);
+        if (path) item.storagePath = path;
+      }
+    });
+
+    return Promise.all(jobs).then(function () {
+      const payload = {
+        id: "default",
+        story: story,
+        gallery: gallery,
+        updated_at: new Date().toISOString(),
+      };
+      const bytes = estimateOurbookPayloadBytes(payload);
+      if (bytes > MAX_PAYLOAD_BYTES) {
+        return Promise.reject(
+          new Error("El estado sigue pesado. Reduce el número de fotos antiguas o vuelve a subirlas.")
+        );
+      }
+      return window.sb
+        .from("ourbook_state")
+        .upsert(payload, { onConflict: "id" })
+        .then(function (r) {
+          if (r.error) return Promise.reject(r.error);
+          state.story = story;
+          state.gallery = gallery;
+          setAdminRemoteStatus("Guardado en la base de datos correctamente.");
+        });
+    });
   }
 
   function fetchRemoteIntoState() {
@@ -347,7 +448,12 @@
         if (!res.data) return false;
         const row = res.data;
         if (row.story && typeof row.story === "object" && !Array.isArray(row.story)) {
-          state.story = deepMerge(cloneDefaults(), row.story);
+          const nextStory = deepMerge(cloneDefaults(), row.story);
+          STORY_SLOT_META.forEach(function (meta) {
+            const slot = nextStory[meta.key];
+            if (slot && slot.src) slot.src = normalizeImageSrc(slot.src);
+          });
+          state.story = nextStory;
         }
         if (Array.isArray(row.gallery)) {
           state.gallery = row.gallery
@@ -358,6 +464,7 @@
               return {
                 ...item,
                 src: normalizeImageSrc(item.src),
+                storagePath: item.storagePath || extractStoragePathFromSrc(item.src) || "",
               };
             });
         }
@@ -502,13 +609,28 @@
   }
 
   function deleteGalleryItem(id) {
-    if (!galleryItemById(id)) return;
+    const item = galleryItemById(id);
+    if (!item) return;
+    const storedPath = item.storagePath || extractStoragePathFromSrc(item.src);
     state.gallery = state.gallery.filter(function (g) {
       return g.id !== id;
     });
     saveState(state);
     refreshGalleryViews();
-    if (window.sb) {
+    if (window.sb && storedPath) {
+      window.sb.storage
+        .from(STORAGE_BUCKET)
+        .remove([storedPath])
+        .catch(function (e) {
+          console.warn("No se pudo borrar de Storage", e);
+        })
+        .finally(function () {
+          flushRemotePush().catch(function (e) {
+            console.warn(e);
+            if (isAdminOpen()) setAdminRemoteStatus(formatSupabaseError(e));
+          });
+        });
+    } else if (window.sb) {
       flushRemotePush().catch(function (e) {
         console.warn(e);
         if (isAdminOpen()) setAdminRemoteStatus(formatSupabaseError(e));
