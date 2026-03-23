@@ -15,48 +15,48 @@
     heroTitle: "Our Beautiful Memories",
     heroSubtitle: "Every moment captured, every heart shared.",
     mainLarge: {
-      src: "public/Navidad%202025%20-%20Primera%20foto.jpg",
+      src: "Navidad%202025%20-%20Primera%20foto.jpg",
       alt: "Navidad 2025 - Primera foto 🤍😍",
       overlay: "Navidad contigo sabe a hogar 🤍🥰",
       label: "Navidad 2025 • Mi amor 🤍",
     },
     smallSquare: {
-      src: "public/The%20Beginning.jpg",
+      src: "The%20Beginning.jpg",
       alt: "The Beginning 🤍😍",
       overlay: "The Beginning: aquí empezó nuestro para siempre 🤍🥰",
       sideCaption: "— The Beginning 🤍",
     },
     polaroid: {
-      src: "public/Playita%20Otra%20vez.jpg",
+      src: "Playita%20Otra%20vez.jpg",
       alt: "Playita Otra vez 🤍😍",
       caption: "Playita otra vez… y te elijo otra vez 🤍😍",
     },
     cutout: {
-      src: "public/Mi%20vida.jpg",
+      src: "Mi%20vida.jpg",
       alt: "Mi vida 🤍😍",
     },
     portrait: {
-      src: "public/Siempre%20te%20amare.jpg",
+      src: "Siempre%20te%20amare.jpg",
       alt: "Siempre te amare 🤍🥰",
     },
     mini1: {
-      src: "public/Jetsky.jpg",
+      src: "Jetsky.jpg",
       alt: "Jetsky 🤍😍",
     },
     mini2: {
-      src: "public/Cada%20atardecer%20contigo%20es%20el%20mejor.jpg",
+      src: "Cada%20atardecer%20contigo%20es%20el%20mejor.jpg",
       alt: "Cada atardecer contigo es el mejor 🤍😍",
     },
     mini3: {
-      src: "public/En%20yola%20para%20PR.jpg",
+      src: "En%20yola%20para%20PR.jpg",
       alt: "En yola para PR 🤍🥰",
     },
     mini4: {
-      src: "public/Mi%20princesa.jpg",
+      src: "Mi%20princesa.jpg",
       alt: "Mi princesa 🤍😍",
     },
     letterPhoto: {
-      src: "public/Primer%20restaurante.jpg",
+      src: "Primer%20restaurante.jpg",
       alt: "Primer restaurante 🤍🥰",
       volumeLabel: "Captured Memories • Vol. 1 🤍",
     },
@@ -102,7 +102,7 @@
     const title = fileName.replace(/\.[^/.]+$/, "");
     return {
       id: "g_seed_" + (idx + 1),
-      src: "public/" + encodeURIComponent(fileName),
+      src: encodeURIComponent(fileName),
       title: title,
       alt: title + " 🤍😍",
       favorite: idx < 12,
@@ -163,6 +163,17 @@
 
   function cloneDefaults() {
     return JSON.parse(JSON.stringify(DEFAULT_STORY));
+  }
+
+  function normalizeImageSrc(src) {
+    var v = String(src || "").trim();
+    if (!v) return "";
+    if (v.indexOf("http://") === 0 || v.indexOf("https://") === 0 || v.indexOf("data:") === 0) {
+      return v;
+    }
+    if (v.indexOf("/public/") === 0) v = v.slice(8);
+    else if (v.indexOf("public/") === 0) v = v.slice(7);
+    return v;
   }
 
   try {
@@ -333,9 +344,16 @@
           state.story = deepMerge(cloneDefaults(), row.story);
         }
         if (Array.isArray(row.gallery)) {
-          state.gallery = row.gallery.filter(function (item) {
-            return item && typeof item.src === "string" && item.src.length > 0;
-          });
+          state.gallery = row.gallery
+            .filter(function (item) {
+              return item && typeof item.src === "string" && item.src.length > 0;
+            })
+            .map(function (item) {
+              return {
+                ...item,
+                src: normalizeImageSrc(item.src),
+              };
+            });
         }
         return true;
       });
@@ -383,7 +401,7 @@
     if (!root) return;
     const img = root.querySelector("[data-slot-img]");
     if (img) {
-      img.src = src || "";
+      img.src = normalizeImageSrc(src);
       img.alt = alt || "";
     }
   }
@@ -507,7 +525,7 @@
           '<div class="relative bg-surface-container-lowest p-3 sm:p-4 sticker-shadow rounded-xl group w-full max-w-md mx-auto">' +
           '<div class="ourbook-photo-frame rounded-xl overflow-hidden flex items-center justify-center">' +
           '<img src="' +
-          escapeAttr(item.src) +
+          escapeAttr(normalizeImageSrc(item.src)) +
           '" alt="' +
           escapeAttr(item.alt || "") +
           '" class="w-full h-auto object-contain" loading="lazy"/>' +
@@ -551,7 +569,7 @@
           '<div class="relative bg-surface-container-lowest p-3 sm:p-4 sticker-shadow rounded-xl w-full max-w-md mx-auto">' +
           '<div class="ourbook-photo-frame rounded-xl overflow-hidden flex items-center justify-center">' +
           '<img src="' +
-          escapeAttr(item.src) +
+          escapeAttr(normalizeImageSrc(item.src)) +
           '" alt="' +
           escapeAttr(item.alt || "") +
           '" class="w-full h-auto object-contain" loading="lazy"/>' +
@@ -754,7 +772,7 @@
           '<div class="flex items-stretch gap-4 p-4 border border-outline-variant/20 rounded-2xl bg-surface-bright/95 hover:border-primary/25 transition-colors">' +
           '<div class="w-[6.5rem] sm:w-28 shrink-0 min-h-[6.5rem] max-h-36 rounded-xl overflow-hidden ourbook-photo-frame flex items-center justify-center border border-outline-variant/25">' +
           '<img src="' +
-          escapeAttr(item.src) +
+          escapeAttr(normalizeImageSrc(item.src)) +
           '" class="max-w-full max-h-full w-auto h-auto object-contain" alt="" loading="lazy"/>' +
           "</div>" +
           '<div class="flex-grow min-w-0">' +
